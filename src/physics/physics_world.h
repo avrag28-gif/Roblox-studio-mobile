@@ -1,5 +1,3 @@
 #pragma once
-#include "../math/vector3.h"
-#include <cstddef>
-#include <unordered_map>
-namespace rsm { struct RigidBody { Vector3 position{},velocity{}; float mass=1; bool anchored=false,canCollide=true; }; class PhysicsWorld { Vector3 gravity_{0,-196.2f,0}; std::unordered_map<std::size_t,RigidBody> bodies_; public: void SetGravity(Vector3 g){gravity_=g;} Vector3 Gravity()const{return gravity_;} void Add(std::size_t id,RigidBody b){bodies_[id]=b;} void Remove(std::size_t id){bodies_.erase(id);} void Step(float dt){if(dt<=0)return;for(auto&[id,b]:bodies_){(void)id;if(!b.anchored){b.velocity=b.velocity+gravity_*dt;b.position=b.position+b.velocity*dt;}}} const RigidBody* Get(std::size_t id)const{auto i=bodies_.find(id);return i==bodies_.end()?nullptr:&i->second;} }; }
+#include "../core/base_part.h"
+namespace rsm { class PhysicsWorld{public:explicit PhysicsWorld(Vector3 g={0,-196.2f,0}):gravity_(g){}void Step(float dt,const Instance& root){for(auto* x:root.GetDescendants()){auto* p=dynamic_cast<BasePart*>(x);if(!p||p->Anchored())continue;auto v=p->Position()+gravity_*dt;if(v.y<0)v.y=0;p->SetPosition(v);}}Vector3 Gravity()const{return gravity_;}private:Vector3 gravity_;};}
