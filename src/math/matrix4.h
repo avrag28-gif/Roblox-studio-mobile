@@ -1,2 +1,4 @@
 #pragma once
-namespace rsm{struct Matrix4{float m[16]{};static Matrix4 Identity(){Matrix4 r;for(int i=0;i<4;i++)r.m[i*4+i]=1;return r;}};}
+#include "vector3.h"
+#include <cmath>
+namespace rsm{struct Matrix4{float m[16]{};static Matrix4 Identity(){Matrix4 r;for(int i=0;i<4;i++)r.m[i*4+i]=1;return r;}static Matrix4 Perspective(float fov,float aspect,float n,float f){Matrix4 r{};float t=1/std::tan(fov*.5f);r.m[0]=t/aspect;r.m[5]=t;r.m[10]=(f+n)/(n-f);r.m[11]=-1;r.m[14]=(2*f*n)/(n-f);return r;}static Matrix4 LookAt(Vector3 eye,Vector3 target,Vector3 up={0,1,0}){auto z=(eye-target).Normalized();auto x=Vector3::cross(up,z).Normalized();auto y=Vector3::cross(z,x);Matrix4 r=Identity();r.m[0]=x.x;r.m[1]=x.y;r.m[2]=x.z;r.m[4]=y.x;r.m[5]=y.y;r.m[6]=y.z;r.m[8]=z.x;r.m[9]=z.y;r.m[10]=z.z;r.m[12]=-x.Dot(eye);r.m[13]=-y.Dot(eye);r.m[14]=-z.Dot(eye);return r;}Matrix4 operator*(const Matrix4&o)const{Matrix4 r{};for(int row=0;row<4;row++)for(int col=0;col<4;col++)for(int k=0;k<4;k++)r.m[row*4+col]+=m[row*4+k]*o.m[k*4+col];return r;}};}
