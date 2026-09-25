@@ -3,7 +3,6 @@ on:
   push:
     branches: [main]
   pull_request:
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -26,16 +25,26 @@ jobs:
         run: yes | "$SDKMANAGER" --licenses >/dev/null || true
       - name: Install Android SDK packages
         run: |
-          "$SDKMANAGER" --install             "platform-tools"             "platforms;android-35"             "build-tools;35.0.0"             "ndk;27.0.12077973"
+          "$SDKMANAGER" --install "platform-tools" "platforms;android-35" "build-tools;35.0.0" "ndk;27.0.12077973" "cmake;3.22.1"
+      - name: Configure and test native engine
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ctest --test-dir build --output-on-failure
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Build APK
-        run: gradle -p android :app:assembleDebug --no-daemon
-      - name: Verify APK
-        run: test -s android/app/build/outputs/apk/debug/app-debug.apk
+      - name: Build debug APK and release AAB
+        run: gradle -p android :app:assembleDebug :app:bundleRelease --no-daemon
+      - name: Verify Android outputs
+        run: |
+          test -s android/app/build/outputs/apk/debug/app-debug.apk
+          test -s android/app/build/outputs/bundle/release/app-release.aab
+          unzip -t android/app/build/outputs/apk/debug/app-debug.apk >/dev/null
       - uses: actions/upload-artifact@v4
         with:
-          name: rsm-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: rsm-android-builds
+          path: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+            android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
