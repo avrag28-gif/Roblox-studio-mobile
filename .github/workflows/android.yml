@@ -25,7 +25,13 @@ jobs:
         run: yes | "$SDKMANAGER" --licenses >/dev/null || true
       - name: Install Android SDK packages
         run: |
-          "$SDKMANAGER" --install "platform-tools" "platforms;android-35" "build-tools;35.0.0" "ndk;27.0.12077973" "cmake;3.22.1"
+          "$SDKMANAGER" --install "platform-tools" "platforms;android-35" "build-tools;35.0.0" "cmake;3.22.1"
+          for attempt in 1 2 3; do
+            rm -rf "$ANDROID_HOME/ndk/27.0.12077973"
+            "$SDKMANAGER" --install "ndk;27.0.12077973" && break
+            test "$attempt" -eq 3 && exit 1
+            sleep 3
+          done
       - name: Configure and test native engine
         run: |
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
