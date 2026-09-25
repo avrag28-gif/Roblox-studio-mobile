@@ -3,7 +3,7 @@
 #include <queue>
 #include <vector>
 namespace rsm {
-struct Packet{uint32_t channel=0;uint64_t sequence=0;std::vector<uint8_t>data;};
+struct Packet{uint32_t channel=0;uint64_t sequence=0;std::vector<uint8_t>data;Packet()=default;Packet(uint32_t c,std::vector<uint8_t>d):channel(c),sequence(0),data(std::move(d)){} Packet(uint32_t c,uint64_t s,std::vector<uint8_t>d):channel(c),sequence(s),data(std::move(d)){} };
 class NetworkWorld{
  std::queue<Packet>q_;uint64_t next_=1;
  public:
