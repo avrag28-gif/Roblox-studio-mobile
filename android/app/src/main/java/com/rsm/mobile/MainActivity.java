@@ -165,7 +165,9 @@ public class MainActivity extends Activity {
       getSharedPreferences(PREF,0).edit().putInt("version",3).putString("scene",a.toString()).putLong("savedAt",System.currentTimeMillis()).apply();dirty=false;refresh();append("INFO","Project saved (version 3).");
     }catch(Exception e){append("ERROR",e.toString());}
   }
-  @Override protected void onPause(){super.onPause();if(dirty)saveProject();}\n\n  void loadProject(){
+  @Override protected void onPause(){super.onPause();if(dirty)saveProject();}
+
+  void loadProject(){
     String s=getSharedPreferences(PREF,0).getString("scene",null);if(s==null){Toast.makeText(this,"No saved project",Toast.LENGTH_SHORT).show();return;}
     try{JSONArray a=new JSONArray(s);objects.clear();for(int i=0;i<a.length();i++){JSONObject j=a.getJSONObject(i);Obj o=new Obj(j.getString("name"));o.id=j.optString("id",o.id);o.type=j.optString("type","Part");o.x=(float)j.optDouble("x");o.y=(float)j.optDouble("y");o.z=(float)j.optDouble("z");o.sx=(float)j.optDouble("sx",2);o.sy=(float)j.optDouble("sy",2);o.sz=(float)j.optDouble("sz",2);o.rx=(float)j.optDouble("rx");o.ry=(float)j.optDouble("ry");o.rz=(float)j.optDouble("rz");o.color=j.optInt("color",Color.rgb(90,160,240));o.anchored=j.optBoolean("anchored",true);o.collide=j.optBoolean("collide",true);objects.add(o);}selected=null;dirty=false;refresh();append("INFO","Project loaded.");}catch(Exception e){append("ERROR","Load failed: "+e.getMessage());}
   }
