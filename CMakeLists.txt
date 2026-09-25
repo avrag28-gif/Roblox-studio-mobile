@@ -11,13 +11,15 @@ set(RSM_TESTS
   rsm_engine_smoke_test
   rsm_full_vertical_slice_test
   rsm_math_test
-  rsm_system_integration_test)
+  rsm_system_integration_test
+  rsm_phase_systems_test)
 add_executable(rsm_smoke tests/smoke_test.cpp)
 add_executable(rsm_core_instance_test tests/core_instance_test.cpp)
 add_executable(rsm_engine_smoke_test tests/engine_smoke_test.cpp)
 add_executable(rsm_full_vertical_slice_test tests/full_vertical_slice_test.cpp)
 add_executable(rsm_math_test tests/math_test.cpp)
 add_executable(rsm_system_integration_test tests/system_integration_test.cpp)
+add_executable(rsm_phase_systems_test tests/phase_systems_test.cpp)
 foreach(t IN LISTS RSM_TESTS)
  target_link_libraries(${t} PRIVATE rsm_core)
 endforeach()
@@ -28,6 +30,7 @@ add_test(NAME engine COMMAND rsm_engine_smoke_test)
 add_test(NAME vertical_slice COMMAND rsm_full_vertical_slice_test)
 add_test(NAME math COMMAND rsm_math_test)
 add_test(NAME system_integration COMMAND rsm_system_integration_test)
+add_test(NAME phase_systems COMMAND rsm_phase_systems_test)
 if(RSM_ENABLE_LUAU)
  include(FetchContent)
  FetchContent_Declare(luau GIT_REPOSITORY https://github.com/luau-lang/luau.git GIT_TAG master)
