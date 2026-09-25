@@ -12,6 +12,7 @@ class Runtime {
     auto* dm=dynamic_cast<DataModel*>(copy.release());
     if(!dm)return false;
     runtime_=std::unique_ptr<DataModel>(dm);
+    script_.Bind(runtime_.get());
     physics_.Clear();
     running_=true;
     return true;
