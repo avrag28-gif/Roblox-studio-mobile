@@ -8,7 +8,7 @@ class ScriptSandbox{
   void Allow(std::string capability){allowed_.insert(std::move(capability));}
   bool Can(const std::string& capability)const{return allowed_.count(capability)>0;}
   bool ValidateSource(const std::string&s,std::string&error)const{
-    static constexpr std::array<const char*,8> blocked={"io.","os.","require("ffi")","debug.","loadstring","dofile","writefile","readfile"};
+    static constexpr std::array<const char*,10> blocked={"io.","os.","ffi","debug.","loadstring","dofile","writefile","readfile","setfenv","getfenv"};
     for(auto*b:blocked)if(s.find(b)!=std::string::npos){error=std::string("blocked capability: ")+b;return false;}
     if(s.size()>maxSourceBytes_){error="script exceeds sandbox source limit";return false;}
     error.clear();return true;
