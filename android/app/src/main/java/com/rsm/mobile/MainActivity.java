@@ -31,7 +31,7 @@ public class MainActivity extends Activity {
   boolean playing=false,dirty=false;
   TextView status,output;
   EditText scriptEditor;
-  final String PREF="rsm_project_v2";
+  final String PREF="rsm_project_v3";
 
   int dp(float v){return (int)(v*getResources().getDisplayMetrics().density+.5f);}
   TextView text(String s,float size){
@@ -114,7 +114,7 @@ public class MainActivity extends Activity {
     row3("Rotation",selected.rx,selected.ry,selected.rz,(a,b,c)->{selected.rx=a;selected.ry=b;selected.rz=c;changed();});
     row3("Size",selected.sx,selected.sy,selected.sz,(a,b,c)->{selected.sx=Math.max(.1f,a);selected.sy=Math.max(.1f,b);selected.sz=Math.max(.1f,c);changed();});
     section("APPEARANCE");
-    EditText nameEdit=edit(selected.name);nameEdit.setHint("Name");props.addView(labelRow("Name",nameEdit));
+    EditText nameEdit=edit(selected.name);nameEdit.setHint("Name");nameEdit.setOnFocusChangeListener((v,has)->{if(!has&&selected!=null&&!nameEdit.getText().toString().trim().isEmpty()){selected.name=nameEdit.getText().toString().trim();changed();}});props.addView(labelRow("Name",nameEdit));
     Button color=btn("Color   "+selected.color);color.setOnClickListener(v->cycleColor());props.addView(color);
     row1("Transparency",selected.type.equals("Model")?0:0);
     section("PHYSICS");
@@ -162,10 +162,10 @@ public class MainActivity extends Activity {
   void saveProject(){
     try{
       JSONArray a=new JSONArray();for(Obj o:objects){JSONObject j=new JSONObject();j.put("id",o.id);j.put("name",o.name);j.put("type",o.type);j.put("x",o.x);j.put("y",o.y);j.put("z",o.z);j.put("sx",o.sx);j.put("sy",o.sy);j.put("sz",o.sz);j.put("rx",o.rx);j.put("ry",o.ry);j.put("rz",o.rz);j.put("color",o.color);j.put("anchored",o.anchored);j.put("collide",o.collide);a.put(j);}
-      getSharedPreferences(PREF,0).edit().putString("scene",a.toString()).apply();dirty=false;refresh();append("INFO","Project saved (version 2).");
+      getSharedPreferences(PREF,0).edit().putInt("version",3).putString("scene",a.toString()).putLong("savedAt",System.currentTimeMillis()).apply();dirty=false;refresh();append("INFO","Project saved (version 3).");
     }catch(Exception e){append("ERROR",e.toString());}
   }
-  void loadProject(){
+  @Override protected void onPause(){super.onPause();if(dirty)saveProject();}\n\n  void loadProject(){
     String s=getSharedPreferences(PREF,0).getString("scene",null);if(s==null){Toast.makeText(this,"No saved project",Toast.LENGTH_SHORT).show();return;}
     try{JSONArray a=new JSONArray(s);objects.clear();for(int i=0;i<a.length();i++){JSONObject j=a.getJSONObject(i);Obj o=new Obj(j.getString("name"));o.id=j.optString("id",o.id);o.type=j.optString("type","Part");o.x=(float)j.optDouble("x");o.y=(float)j.optDouble("y");o.z=(float)j.optDouble("z");o.sx=(float)j.optDouble("sx",2);o.sy=(float)j.optDouble("sy",2);o.sz=(float)j.optDouble("sz",2);o.rx=(float)j.optDouble("rx");o.ry=(float)j.optDouble("ry");o.rz=(float)j.optDouble("rz");o.color=j.optInt("color",Color.rgb(90,160,240));o.anchored=j.optBoolean("anchored",true);o.collide=j.optBoolean("collide",true);objects.add(o);}selected=null;dirty=false;refresh();append("INFO","Project loaded.");}catch(Exception e){append("ERROR","Load failed: "+e.getMessage());}
   }
