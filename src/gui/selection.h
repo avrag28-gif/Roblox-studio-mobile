@@ -1,3 +1,3 @@
 #pragma once
 #include "../core/instance.h"
-namespace rsm {class Selection{public:void Set(Instance* x){selected_=x;}Instance* Get()const{return selected_;}void Clear(){selected_=nullptr;}private:Instance* selected_=nullptr;};}
+namespace rsm {class Selection{Instance*selected_=nullptr;public:void Set(Instance*x){selected_=x;}void Clear(){selected_=nullptr;}Instance*Get()const{return selected_;}bool Has()const{return selected_!=nullptr;}};enum class GizmoMode{Move,Rotate,Scale};enum class GizmoAxis{None,X,Y,Z,XYZ};struct GizmoState{GizmoMode mode=GizmoMode::Move;GizmoAxis axis=GizmoAxis::None;};}

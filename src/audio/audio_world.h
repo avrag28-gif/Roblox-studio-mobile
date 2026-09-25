@@ -1,3 +1,4 @@
 #pragma once
 #include <string>
-namespace rsm {struct SoundState{std::string id;float volume=1;bool looping=false;bool playing=false;};class AudioWorld{public:void Play(SoundState& s){s.playing=true;}void Stop(SoundState& s){s.playing=false;}};}
+#include <unordered_map>
+namespace rsm {struct SoundState{std::string id;float volume=1;bool looping=false,playing=false;};class AudioWorld{std::unordered_map<std::string,SoundState>sounds;public:bool Register(SoundState s){return sounds.emplace(s.id,std::move(s)).second;}bool Play(const std::string&id){auto i=sounds.find(id);if(i==sounds.end())return false;i->second.playing=true;return true;}bool Stop(const std::string&id){auto i=sounds.find(id);if(i==sounds.end())return false;i->second.playing=false;return true;}const SoundState*Get(const std::string&id)const{auto i=sounds.find(id);return i==sounds.end()?nullptr:&i->second;}};}

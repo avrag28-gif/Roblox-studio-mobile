@@ -4,13 +4,4 @@
 #include <unordered_map>
 #include <vector>
 #include <cstddef>
-namespace rsm {
-template<class... Args> class Signal {
-public:
- using Callback=std::function<void(Args...)>; using ConnectionId=std::size_t;
- ConnectionId Connect(Callback cb){std::lock_guard l(m_); auto id=next_++; slots_[id]=std::move(cb); return id;}
- void Disconnect(ConnectionId id){std::lock_guard l(m_); slots_.erase(id);}
- void Fire(Args... args){std::vector<Callback> s; {std::lock_guard l(m_); for(auto& [id,cb]:slots_) s.push_back(cb);} for(auto& cb:s) if(cb) cb(args...);}
-private: std::mutex m_; std::unordered_map<ConnectionId,Callback> slots_; ConnectionId next_=1;
-};
-}
+namespace rsm {template<class...A>class Signal{public:using Callback=std::function<void(A...)>;using Id=std::size_t;class Connection{Signal*s{};Id i{};public:Connection()=default;Connection(Signal*x,Id n):s(x),i(n){}Connection(Connection&&o)noexcept:s(o.s),i(o.i){o.s=nullptr;}~Connection(){Disconnect();}Connection(const Connection&)=delete;void Disconnect(){if(s){s->Disconnect(i);s=nullptr;}}explicit operator bool()const{return s!=nullptr;}};Connection Connect(Callback cb){std::lock_guard<std::mutex>l(m);auto i=next++;slots[i]=std::move(cb);return Connection(this,i);}void Disconnect(Id i){std::lock_guard<std::mutex>l(m);slots.erase(i);}void Clear(){std::lock_guard<std::mutex>l(m);slots.clear();}void Fire(A...a){std::vector<Callback>v;{std::lock_guard<std::mutex>l(m);for(auto&[_,cb]:slots)v.push_back(cb);}for(auto&cb:v)if(cb)cb(a...);}private:std::mutex m;std::unordered_map<Id,Callback>slots;Id next=1;};}

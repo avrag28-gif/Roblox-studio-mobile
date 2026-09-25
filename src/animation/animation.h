@@ -1,4 +1,5 @@
 #pragma once
-#include "../math/cframe.h"
+#include "../math/vector3.h"
+#include <string>
 #include <vector>
-namespace rsm {struct Keyframe{float time=0;CFrame transform{};};class AnimationTrack{public:void Add(Keyframe k){keys_.push_back(k);}const std::vector<Keyframe>& Keys()const{return keys_;}private:std::vector<Keyframe> keys_;};}
+namespace rsm {struct Keyframe{float time=0;Vector3 position{};};struct AnimationTrack{std::string name;std::vector<Keyframe>keys;};class Animator{std::vector<AnimationTrack>tracks;float time=0;public:void Add(AnimationTrack t){tracks.push_back(std::move(t));}void Step(float dt){time+=dt;}float Time()const{return time;}};}

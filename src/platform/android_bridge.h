@@ -1,0 +1,2 @@
+#pragma once
+namespace rsm {class AndroidBridge{public:virtual~AndroidBridge()=default;virtual void OnSurfaceCreated(){}virtual void OnSurfaceDestroyed(){}virtual void OnPause(){}virtual void OnResume(){}};}
