@@ -1,0 +1,2 @@
+#pragma once
+namespace rsm { struct SoundState{float volume=1;bool looping=false,playing=false;}; class AudioSystem{public:void Play(){state_.playing=true;}void Pause(){state_.playing=false;}void SetVolume(float v){state_.volume=v;}void SetLooping(bool v){state_.looping=v;}const SoundState& State()const{return state_;}private:SoundState state_;};}

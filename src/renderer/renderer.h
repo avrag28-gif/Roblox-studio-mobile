@@ -1,0 +1,3 @@
+#pragma once
+#include "render_world.h"
+namespace rsm { enum class GraphicsBackend{Vulkan,OpenGLES}; class Renderer{GraphicsBackend backend_=GraphicsBackend::OpenGLES;bool initialized_=false;public:bool Initialize(GraphicsBackend b){backend_=b;initialized_=true;return true;}void Shutdown(){initialized_=false;}bool Initialized()const{return initialized_;}GraphicsBackend Backend()const{return backend_;}void Render(const RenderWorld&){/* backend-neutral submission point */}};}

@@ -1,2 +1,2 @@
 #pragma once
-namespace rsm { enum class RuntimeRole{Editor,Server,Client}; class RuntimeContext { RuntimeRole role_; public: explicit RuntimeContext(RuntimeRole r):role_(r){} RuntimeRole Role()const{return role_;} }; }
+namespace rsm { enum class RuntimeRole{Editor,Server,Client}; class RuntimeContext{RuntimeRole role_;public:explicit RuntimeContext(RuntimeRole r):role_(r){}RuntimeRole Role()const{return role_;}};}

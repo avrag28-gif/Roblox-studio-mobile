@@ -1,0 +1,2 @@
+#pragma once
+namespace rsm { struct PlatformInfo{static constexpr const char* Name="mobile";static constexpr int GraphicsBudgetMB=200;static constexpr int PhysicsBudgetMB=100;static constexpr int LuauBudgetMB=80;static constexpr int GuiBudgetMB=80;};}
