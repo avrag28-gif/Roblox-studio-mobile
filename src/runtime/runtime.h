@@ -1,18 +1,18 @@
 #pragma once
-#include "../scene/scene.h"
+#include "../core/data_model.h"
 #include "../physics/physics_world.h"
 #include "../scripting/luau_service.h"
 namespace rsm {
 class Runtime {
  public:
   Runtime():script_([this](std::string m){lastLog_=std::move(m);}) {}
-  bool Start(const Scene& source){
-    auto copy=source.Game().Clone();
+  bool Start(const DataModel& source){
+    auto copy=source.Clone();
     if(!copy)return false;
-    scene_.Reset();
     auto* dm=dynamic_cast<DataModel*>(copy.release());
     if(!dm)return false;
-    runtimeRoot_.reset(dm);
+    runtime_=std::unique_ptr<DataModel>(dm);
+    physics_.Clear();
     running_=true;
     return true;
   }
@@ -20,18 +20,17 @@ class Runtime {
     if(!running_)return false;
     return script_.CompileAndRun(source);
   }
-  void Step(float dt){if(running_)physics_.Step(dt,scene_.Game());}
-  void Stop(){running_=false;runtimeRoot_.reset();}
-  bool Running()const{return running_;}
-  Scene& Game(){return scene_;}
-  const Scene& Game()const{return scene_;}
+  void Step(float dt){if(running_&&runtime_)physics_.Step(dt,*runtime_);}
+  void Stop(){running_=false;runtime_.reset();physics_.Clear();}
+  bool Running()const{return running_&&runtime_!=nullptr;}
+  DataModel* Game(){return runtime_.get();}
+  const DataModel* Game()const{return runtime_.get();}
   const std::string& LastLog()const{return lastLog_;}
   const LuauService& Scripts()const{return script_;}
  private:
-  Scene scene_;
+  std::unique_ptr<DataModel> runtime_;
   PhysicsWorld physics_;
   LuauService script_;
-  std::unique_ptr<DataModel> runtimeRoot_;
   std::string lastLog_;
   bool running_=false;
 };
