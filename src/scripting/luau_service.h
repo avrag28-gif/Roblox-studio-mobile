@@ -42,7 +42,7 @@ class LuauService{
 #ifdef RSM_LUAU_ENABLED
   static std::string ErrorText(lua_State*L){const char*s=lua_tostring(L,-1);return s?s:"Luau error";}
   static int GetServiceThunk(lua_State*L){auto*dm=static_cast<DataModel*>(lua_touserdata(L,lua_upvalueindex(1)));if(!dm){lua_pushnil(L);return 1;}const char*n=luaL_checkstring(L,2);auto*i=dm->GetService(n);if(!i){lua_pushnil(L);return 1;}lua_pushlightuserdata(L,i);return 1;}
-  static int InstanceNewThunk(lua_State*L){const char*n=luaL_checkstring(L,1);auto p=InstanceFactory::New(n);if(!p){lua_pushnil(L);return 1;}auto*i=p.get();auto*dm=static_cast<DataModel*>(lua_touserdata(L,lua_upvalueindex(1)));if(dm)Instance::SetParent(std::move(p),dm);lua_pushlightuserdata(L,i);return 1;}
+  static int InstanceNewThunk(lua_State*L){const char*n=luaL_checkstring(L,1);auto p=InstanceFactory::New(n);if(!p){lua_pushnil(L);return 1;}auto*i=p.get();auto*dm=static_cast<DataModel*>(lua_touserdata(L,lua_upvalueindex(1)));if(dm){auto*ws=dm->GetService("Workspace");Instance::SetParent(std::move(p),ws?ws:dm);}lua_pushlightuserdata(L,i);return 1;}
 #endif
   Log log_;std::vector<ScriptDiagnostic>diagnostics_;ScriptSandbox sandbox_;DataModel*game_=nullptr;
 };
