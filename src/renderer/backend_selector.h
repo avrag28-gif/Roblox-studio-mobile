@@ -1,5 +1,6 @@
 #pragma once
 #include "renderer.h"
+#include <memory>
 #ifdef __ANDROID__
 #include "gles_renderer.h"
 #endif
