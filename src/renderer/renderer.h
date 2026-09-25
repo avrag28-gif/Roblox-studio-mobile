@@ -1,3 +1,4 @@
 #pragma once
-#include "render_world.h"
-namespace rsm { enum class GraphicsBackend{Vulkan,OpenGLES}; class Renderer{GraphicsBackend backend_=GraphicsBackend::OpenGLES;bool initialized_=false;public:bool Initialize(GraphicsBackend b){backend_=b;initialized_=true;return true;}void Shutdown(){initialized_=false;}bool Initialized()const{return initialized_;}GraphicsBackend Backend()const{return backend_;}void Render(const RenderWorld&){/* backend-neutral submission point */}};}
+#include "../core/base_part.h"
+#include <cstddef>
+namespace rsm { struct Camera{Vector3 position{0,5,10};Vector3 target{};float fov=60;};class Renderer{public:virtual~Renderer()=default;virtual bool Initialize()=0;virtual void Resize(int,int)=0;virtual void Render(const Instance&)=0;virtual const char* Backend()const=0;};class NullRenderer:public Renderer{public:bool Initialize()override{return true;}void Resize(int w,int h)override{w_=w;h_=h;}void Render(const Instance& root)override{draws_=0;for(auto* x:root.GetDescendants())if(dynamic_cast<const BasePart*>(x))++draws_;}const char* Backend()const override{return "null";}std::size_t DrawCount()const{return draws_;}private:int w_=0,h_=0;std::size_t draws_=0;};}
