@@ -6,11 +6,14 @@ Instance::~Instance()=default;
 void Instance::SetName(std::string n){if(name_==n)return;name_=std::move(n);PropertyChanged.Fire("Name");}
 void Instance::SetArchivable(bool v)noexcept{if(archivable_==v)return;archivable_=v;PropertyChanged.Fire("Archivable");}
 void Instance::SetParent(Instance* p){
- if(p==parent_)return; if(p==this)return;
+ if(p==parent_||p==this)return;
  for(auto* a=p;a;a=a->parent_)if(a==this)return;
- if(parent_){auto* old=parent_;auto it=std::find_if(old->children_.begin(),old->children_.end(),[this](auto& x){return x.get()==this;});
-  if(it!=old->children_.end()){auto owner=std::move(*it);old->children_.erase(it);owner->parent_=nullptr;old->ChildRemoved.Fire(this);if(p){owner->parent_=p;auto raw=owner.get();p->children_.push_back(std::move(owner));p->ChildAdded.Fire(raw);return;}}}
- if(p){auto owned=std::make_unique<Instance>(*this);(void)owned;}
+ if(!parent_)return;
+ auto* old=parent_;
+ auto it=std::find_if(old->children_.begin(),old->children_.end(),[this](auto& x){return x.get()==this;});
+ if(it==old->children_.end())return;
+ auto owner=std::move(*it); old->children_.erase(it); owner->parent_=nullptr; old->ChildRemoved.Fire(this);
+ if(p){owner->parent_=p;auto raw=owner.get();p->children_.push_back(std::move(owner));p->ChildAdded.Fire(raw);}
 }
 Instance* Instance::FindFirstChild(const std::string& n,bool r)const{for(auto& c:children_){if(c->Name()==n)return c.get();if(r)if(auto* x=c->FindFirstChild(n,true))return x;}return nullptr;}
 Instance* Instance::FindFirstChildOfClass(const std::string& c)const{for(auto& x:children_)if(x->ClassName()==c)return x.get();return nullptr;}
