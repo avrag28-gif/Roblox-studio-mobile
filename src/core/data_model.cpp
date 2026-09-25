@@ -1,27 +1,23 @@
 #include "data_model.h"
-#include <memory>
-
 namespace rsm {
-
-DataModel::DataModel() : Instance("DataModel") { SetName("game"); }
-
-Instance* DataModel::GetService(const std::string& serviceName) {
-    if (auto it = services_.find(serviceName); it != services_.end()) return it->second;
-    auto service = std::make_unique<Instance>(serviceName);
-    service->SetName(serviceName);
-    auto* raw = service.get();
-    AddChild(std::move(service));
-    services_[serviceName] = raw;
-    return raw;
+DataModel::DataModel() : Instance("DataModel") {
+    SetName("game");
+    const char* names[] = {"Workspace","Players","Lighting","ReplicatedStorage",
+        "ServerScriptService","ServerStorage","StarterGui","StarterPack","SoundService"};
+    for (const char* name : names) {
+        auto service = std::make_unique<Instance>("Service");
+        service->SetName(name);
+        Instance* raw = service.get();
+        AddChild(std::move(service));
+        services_.emplace(name, raw);
+    }
 }
-
-void DataModel::InitializeDefaultServices() {
-    static constexpr const char* defaults[] = {
-        "Workspace", "Players", "Lighting", "ReplicatedStorage",
-        "ServerScriptService", "ServerStorage", "StarterGui",
-        "StarterPack", "SoundService"
-    };
-    for (const auto* name : defaults) GetService(name);
+Instance* DataModel::GetService(const std::string& name) {
+    auto it = services_.find(name);
+    return it == services_.end() ? nullptr : it->second;
 }
-
+const Instance* DataModel::GetService(const std::string& name) const {
+    auto it = services_.find(name);
+    return it == services_.end() ? nullptr : it->second;
+}
 }
