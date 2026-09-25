@@ -1,5 +1,6 @@
 #pragma once
 #include "renderer.h"
+#include <cmath>
 #ifdef __ANDROID__
 #include <GLES3/gl3.h>
 #endif
