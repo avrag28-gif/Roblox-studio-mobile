@@ -70,7 +70,7 @@ public class MainActivity extends Activity {
     root.addView(bottom,new LinearLayout.LayoutParams(-1,dp(210)));
     status=text("●  EDIT   •   3 objects   •   Ready",12);status.setPadding(dp(12),0,dp(12),0);
     root.addView(status,new LinearLayout.LayoutParams(-1,dp(34)));
-    setContentView(root);refresh();
+    setContentView(root);bottom("OUTPUT");refresh();
   }
 
   View topBar(){
@@ -81,6 +81,9 @@ public class MainActivity extends Activity {
     Button play=btn("▶  Play");play.setOnClickListener(v->togglePlay(play));bar.addView(play);
     Button save=btn("Save");save.setOnClickListener(v->saveProject());bar.addView(save);
     Button load=btn("Open");load.setOnClickListener(v->loadProject());bar.addView(load);
+    Button move=btn("Move");move.setOnClickListener(v->{mode=Mode.MOVE;viewport.invalidate();});bar.addView(move);
+    Button rotate=btn("Rotate");rotate.setOnClickListener(v->{mode=Mode.ROTATE;viewport.invalidate();});bar.addView(rotate);
+    Button scale=btn("Scale");scale.setOnClickListener(v->{mode=Mode.SCALE;viewport.invalidate();});bar.addView(scale);
     Button more=btn("⋮");more.setOnClickListener(v->showTools());bar.addView(more,new LinearLayout.LayoutParams(dp(52),-1));
     return bar;
   }
@@ -151,7 +154,7 @@ public class MainActivity extends Activity {
   }
   void showScript(){
     scriptEditor=new EditText(this);scriptEditor.setText("-- RSM Luau Script\nlocal Workspace = game:GetService(\"Workspace\")\n\nlocal part = Instance.new(\"Part\")\npart.Name = \"RuntimePart\"\npart.Parent = Workspace\n");scriptEditor.setTextColor(Color.WHITE);scriptEditor.setTextSize(13);scriptEditor.setGravity(Gravity.TOP);scriptEditor.setPadding(dp(12),dp(8),dp(12),dp(8));scriptEditor.setBackgroundColor(Color.rgb(16,18,22));bottom.addView(scriptEditor,new LinearLayout.LayoutParams(-1,0,1));
-    Button run=btn("▶  Run Script");run.setOnClickListener(v->{append("INFO","Script compiled/executed in sandbox adapter.");Toast.makeText(this,"Script run",Toast.LENGTH_SHORT).show();});bottom.addView(run,new LinearLayout.LayoutParams(-1,dp(42)));
+    Button run=btn("▶  Run Script");run.setOnClickListener(v->{String src=scriptEditor.getText().toString();if(src.trim().isEmpty()){append("ERROR","Script is empty.");return;}append("INFO","Luau source queued for sandbox execution ("+src.length()+" chars).");Toast.makeText(this,"Script queued",Toast.LENGTH_SHORT).show();});bottom.addView(run,new LinearLayout.LayoutParams(-1,dp(42)));
   }
   void showAssets(){LinearLayout p=new LinearLayout(this);p.setOrientation(LinearLayout.VERTICAL);p.addView(text("ASSET BROWSER",13));p.addView(text("▣  Built-in Materials\n▣  Meshes   (OBJ / GLB pipeline)\n▣  Textures\n▣  Sounds\n▣  Animations\n\nImport validates → processes → caches assets.",12));bottom.addView(p,new LinearLayout.LayoutParams(-1,0,1));}
   void showDebug(){bottom.addView(text("CPU  —  ready\nGPU  —  renderer backend: Android surface\nScene objects  —  "+objects.size()+"\nPhysics bodies  —  "+objects.size()+"\nScripts  —  sandbox\nMemory  —  runtime monitored",12),new LinearLayout.LayoutParams(-1,0,1));}
@@ -180,7 +183,7 @@ public class MainActivity extends Activity {
       float grid=dp(32);for(float x=w/2;x<w;x+=grid)c.drawLine(x,0,x,h,p);for(float x=w/2;x>0;x-=grid)c.drawLine(x,0,x,h,p);for(float y=h/2;y<h;y+=grid)c.drawLine(0,y,w,y,p);for(float y=h/2;y>0;y-=grid)c.drawLine(0,y,w,y,p);
       p.setColor(Color.rgb(100,105,115));p.setStrokeWidth(2);c.drawLine(0,h/2,w,h/2,p);c.drawLine(w/2,0,w/2,h,p);
       for(Obj o:objects)drawObj(c,o,w/2,h/2);
-      p.setStyle(Paint.Style.FILL);p.setTextSize(dp(14));p.setColor(Color.WHITE);c.drawText("3D VIEWPORT   •   "+mode.name(),dp(14),dp(24),p);
+      p.setStyle(Paint.Style.FILL);p.setTextSize(dp(14));p.setColor(Color.WHITE);c.drawText("3D VIEWPORT   •   "+mode.name()+"   •   "+objects.size()+" objects",dp(14),dp(24),p);
       p.setTextSize(dp(11));p.setColor(Color.LTGRAY);c.drawText("1-finger select/drag  •  2-finger camera  •  pinch zoom",dp(14),h-dp(12),p);
     }
     void drawObj(Canvas c,Obj o,float cx,float cy){
@@ -190,9 +193,9 @@ public class MainActivity extends Activity {
       p.setStyle(Paint.Style.FILL);p.setTextSize(dp(10));p.setColor(Color.WHITE);c.drawText(o.name,x-sx/2,y+sy/2+dp(14),p);
     }
     public boolean onTouchEvent(android.view.MotionEvent e){
-      if(e.getPointerCount()>1)return true;
+      if(e.getPointerCount()>1){lastX=e.getX();lastY=e.getY();return true;}
       float x=e.getX(),y=e.getY();if(e.getAction()==MotionEvent.ACTION_DOWN){lastX=x;lastY=y;drag=true;return true;}
-      if(e.getAction()==MotionEvent.ACTION_UP){Obj hit=hit(x,y);if(hit!=null){select(hit);if(mode!=Mode.SELECT){applyGesture(hit,x-lastX,y-lastY);}}drag=false;return true;}
+      if(e.getAction()==MotionEvent.ACTION_UP){Obj hit=hit(x,y);if(hit!=null){select(hit);}else if(mode==Mode.SELECT){selected=null;refreshProps();invalidate();}drag=false;return true;}
       if(e.getAction()==MotionEvent.ACTION_MOVE&&drag&&selected!=null&&mode!=Mode.SELECT){applyGesture(selected,x-lastX,y-lastY);lastX=x;lastY=y;return true;}
       return true;
     }
