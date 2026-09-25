@@ -10,6 +10,10 @@
 #include "../src/security/credential_store.h"
 #include "../src/network/replication_runtime.h"
 #include "../src/animation/animation_runtime2.h"
+#include "../src/assets/obj_importer.h"
+#include "../src/assets/resource_cache.h"
+#include "../src/editor/editor_document.h"
+#include "../src/gui/output_console.h"
 #include <cassert>
 #include <iostream>
 using namespace rsm;
@@ -25,6 +29,6 @@ int main(){
  ReplicationRuntime repl;repl.Queue("Workspace.TestPart","Position","2,3,0");ReplicationMessage m;assert(repl.Pop(m));assert(repl.ApplyOrdered(m,[](const auto&){return true;}));
  AnimationTrack track;track.Add({0,{0,0,0}});track.Add({1,{10,0,0}});track.Play();track.Step(.5f);assert(track.Sample().x>0&&track.Sample().x<10);
  PerformanceRuntime perf;perf.BeginFrame();perf.SetDrawCalls(render.VisibleCount());perf.SetMemory(1024);perf.EndFrame();assert(perf.Frame().drawCalls==1);
- auto json=ProjectStore::Save(game);assert(json.find("\"version\"")!=std::string::npos);
- auto clone=game.Clone();assert(clone&&dynamic_cast<DataModel*>(clone.get()));std::cout<<"all vertical systems ok\n";
+ MeshData mesh; std::string objErr; assert(ObjImporter::Parse("v 0 0 0\nv 1 0 0\nv 0 1 0\nf 1 2 3\n",mesh,objErr)); assert(mesh.indices.size()==3);\n auto json=ProjectStore::Save(game);assert(json.find("\"version\"")!=std::string::npos);
+ OutputConsole console;console.Push(LogLevel::Info,"ok");assert(console.Entries().size()==1); ResourceCache<int> cache;cache.Put("x",std::make_shared<int>(7),1);assert(*cache.Get("x",2)==7); EditorDocument doc;doc.Open(std::unique_ptr<DataModel>(dynamic_cast<DataModel*>(game.Clone().release())));doc.BeginEdit();assert(doc.CanUndo());assert(doc.Undo());\n auto clone=game.Clone();assert(clone&&dynamic_cast<DataModel*>(clone.get()));std::cout<<"all vertical systems ok\n";
 }
