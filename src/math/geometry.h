@@ -1,0 +1,3 @@
+#pragma once
+#include "vector3.h"
+namespace rsm{struct AABB{Vector3 min{},max{};bool Contains(Vector3 p)const{return p.x>=min.x&&p.x<=max.x&&p.y>=min.y&&p.y<=max.y&&p.z>=min.z&&p.z<=max.z;}bool Intersects(const AABB&b)const{return min.x<=b.max.x&&max.x>=b.min.x&&min.y<=b.max.y&&max.y>=b.min.y&&min.z<=b.max.z&&max.z>=b.min.z;}};struct OBB{Vector3 center{},halfExtents{.5f,.5f,.5f};};struct Plane{Vector3 normal{};float distance=0;float SignedDistance(Vector3 p)const{return normal.Dot(p)+distance;}};}

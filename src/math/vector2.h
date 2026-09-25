@@ -1,2 +1,3 @@
 #pragma once
-namespace rsm { struct Vector2{float x=0,y=0;constexpr Vector2()=default;constexpr Vector2(float X,float Y):x(X),y(Y){}}; }
+#include <cmath>
+namespace rsm{struct Vector2{float x=0,y=0;constexpr Vector2()=default;constexpr Vector2(float X,float Y):x(X),y(Y){}Vector2 operator+(Vector2 b)const{return{x+b.x,y+b.y};}Vector2 operator-(Vector2 b)const{return{x-b.x,y-b.y};}Vector2 operator*(float s)const{return{x*s,y*s};}float Dot(Vector2 b)const{return x*b.x+y*b.y;}float Length()const{return std::sqrt(Dot(*this));}};}

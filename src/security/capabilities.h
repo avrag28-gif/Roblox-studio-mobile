@@ -1,3 +1,3 @@
 #pragma once
 #include <cstdint>
-namespace rsm {enum class Capability:std::uint32_t{None=0,Scene=1,Assets=2,Network=4,FileIO=8};class CapabilitySet{public:explicit CapabilitySet(std::uint32_t bits=0):bits_(bits){}bool Allows(Capability c)const{return(bits_&static_cast<std::uint32_t>(c))!=0;}private:std::uint32_t bits_;};}
+namespace rsm{enum class Capability:std::uint32_t{None=0,SceneRead=1,SceneWrite=2,FileRead=4,FileWrite=8,Network=16};inline bool Has(Capability s,Capability b){return(static_cast<std::uint32_t>(s)&static_cast<std::uint32_t>(b))!=0;}}
