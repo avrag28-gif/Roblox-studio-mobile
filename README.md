@@ -1,25 +1,9 @@
 # Roblox Studio Mobile
+Native C++20 engine/editor foundation targeting Android ARM64 first, with an architecture that can later host iOS.
 
-A mobile-first Roblox-inspired game editor and native C++ engine foundation for Android ARM64.
+## Build
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --parallel
+ctest --test-dir build --output-on-failure
 
-## Current milestone
-
-Foundation / Phase 1: native engine core, Android shell, CMake build, and GitHub Actions APK pipeline.
-
-## Goals
-
-- Roblox-style DataModel / Instance hierarchy.
-- Luau-compatible scripting layer.
-- Touch-first 3D editor.
-- Physics, assets, client/server runtime and versioning.
-- Roblox publishing through supported public APIs.
-- Android APK/AAB builds.
-
-## Architecture
-
-- src/core — DataModel, Instance, Signals and primitive engine types.
-- android — Android application shell and native bridge.
-- assets — runtime/editor assets.
-- tests — engine tests.
-
-Roblox compatibility is implemented through documented/public interfaces; proprietary Roblox internals are not reproduced.
+The Android module is a native-shell scaffold and CI produces a debug APK. Production Vulkan/OpenGL ES rendering, full Luau embedding, real physics, device profiling and Roblox publishing are intentionally represented by replaceable interfaces until their external APIs are integrated and verified. No Roblox proprietary internals or credentials are included.

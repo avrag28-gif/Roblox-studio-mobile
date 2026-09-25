@@ -1,0 +1,4 @@
+package com.rsm.mobile;
+import android.app.Activity;import android.os.Bundle;import android.view.View;import android.graphics.Canvas;import android.graphics.Paint;
+public class MainActivity extends Activity{static{System.loadLibrary("rsm_android");}public void onCreate(Bundle b){super.onCreate(b);setContentView(new EditorView());}
+static class EditorView extends View{Paint p=new Paint();EditorView(Activity a){super(a);p.setTextSize(40);}protected void onDraw(Canvas c){c.drawText("Roblox Studio Mobile",32,64,p);p.setTextSize(24);c.drawText("Explorer    Viewport    Properties    Output",32,112,p);c.drawText("C++ engine / Android native shell",32,160,p);}}}
