@@ -1,9 +1,10 @@
-name: RSM Core CI
+name: Core CI
 on:
   push:
+    branches: [main]
   pull_request:
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
