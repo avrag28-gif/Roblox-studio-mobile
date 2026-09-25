@@ -14,7 +14,7 @@ public:
  const std::string& ClassName()const noexcept{return className_;}
  Instance* Parent()const noexcept{return parent_;}
  bool Archivable()const noexcept{return archivable_;} void SetArchivable(bool value)noexcept;
- void SetParent(Instance* parent);
+ void SetParent(Instance* parent);\n void AddChild(std::unique_ptr<Instance> child);\n static void SetParent(std::unique_ptr<Instance> child, Instance* parent);
  Instance* FindFirstChild(const std::string& name,bool recursive=false)const;
  Instance* FindFirstChildOfClass(const std::string& className)const;
  std::vector<Instance*> GetChildren()const; std::vector<Instance*> GetDescendants()const;
