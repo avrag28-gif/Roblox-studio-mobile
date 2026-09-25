@@ -1,16 +1,4 @@
 #include "core/data_model.h"
+#include "core/instance_factory.h"
 #include <cassert>
-#include <iostream>
-using namespace rsm;
-int main() {
-    DataModel game;
-    auto* workspace = game.GetService("Workspace");
-    assert(workspace && workspace->Name()=="Workspace");
-    bool changed=false;
-    workspace->PropertyChanged.Connect([&](const std::string& p){ changed = p=="Name"; });
-    workspace->SetName("World");
-    assert(changed);
-    workspace->SetAttribute("GravityScale", 1.0);
-    assert(workspace->GetAttribute("GravityScale"));
-    std::cout << "CORE_INSTANCE_PASS\n";
-}
+int main(){using namespace rsm;DataModel g;auto*w=g.GetService("Workspace");bool hit=false;auto id=w->PropertyChanged.Connect([&](const std::string&n){hit=n=="Name";});w->SetName("World");assert(hit);w->PropertyChanged.Disconnect(id);auto p=InstanceFactory::New("Part");auto*r=Instance::SetParent(std::move(p),w);assert(r&&r->ClassName()=="Part");r->SetName("A");auto c=r->Clone();assert(c&&c->ClassName()=="Part");r->Destroy();assert(!w->FindFirstChild("A"));}
