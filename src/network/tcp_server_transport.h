@@ -1,7 +1,6 @@
 #pragma once
 #include "tcp_transport.h"
-#include <cerrno>
-#include <fcntl.h>
+#include <memory>
 namespace rsm {
 class TcpServerTransport {
  int fd_=-1;
