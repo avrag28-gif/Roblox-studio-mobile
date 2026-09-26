@@ -12,6 +12,8 @@ extern "C" JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM*,void*){game.InitializeDefau
 extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeSurfaceCreated(JNIEnv*,jclass){renderer=std::make_unique<rsm::GLESRenderer>();renderer->Initialize();camera.position={0,8,18};camera.target={0,0,0};renderer->SetCamera(camera);}
 extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeSurfaceChanged(JNIEnv*,jclass,jint w,jint h){if(renderer)renderer->Resize(w,h);}
 extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeSurfaceDraw(JNIEnv*,jclass){if(renderer&&workspace)renderer->Render(game);}
+extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeCameraOrbit(JNIEnv*,jclass,jfloat yaw,jfloat pitch){camera.Orbit(yaw,pitch);if(renderer)renderer->SetCamera(camera);}
+extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeCameraZoom(JNIEnv*,jclass,jfloat delta){camera.Zoom(delta);if(renderer)renderer->SetCamera(camera);}
 extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeSyncScene(JNIEnv* env,jclass,jfloatArray data){
  if(!workspace)return; for(auto* c:workspace->GetChildren()) c->Destroy();
  jsize n=env->GetArrayLength(data); if(n%8)return; std::vector<jfloat> v(n);env->GetFloatArrayRegion(data,0,n,v.data());
