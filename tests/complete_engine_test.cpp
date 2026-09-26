@@ -35,5 +35,5 @@ int main(){
  auto json=ProjectStore::Save(game);assert(json.find("\"version\"")!=std::string::npos);
  auto scene=SceneCodec::Save(game);std::string sceneErr;auto restored=SceneCodec::Load(scene,sceneErr);assert(restored&&sceneErr.empty());assert(restored->GetService("Workspace")->FindFirstChild("TestPart"));
  OutputConsole console;console.Push(LogLevel::Info,"ok");assert(console.Entries().size()==1); auto renderer=BackendSelector::Create(); assert(renderer&&renderer->Initialize()); renderer->SetCamera(Camera{}); renderer->Render(game); ResourceCache<int> cache;cache.Put("x",std::make_shared<int>(7),1);assert(*cache.Get("x",2)==7); EditorDocument doc;doc.Open(std::unique_ptr<DataModel>(dynamic_cast<DataModel*>(game.Clone().release())));doc.BeginEdit();assert(doc.CanUndo());assert(doc.Undo());
- auto clone=game.Clone();assert(clone&&dynamic_cast<DataModel*>(clone.get()));std::cout<<"all vertical systems ok\n";
+ auto clone=game.Clone();assert(clone&&dynamic_cast<DataModel*>(clone.get()));auto* clonedGame=dynamic_cast<DataModel*>(clone.get());assert(clonedGame->GetChildren().size()==game.GetChildren().size());assert(clonedGame->GetService("Workspace")->FindFirstChild("TestPart"));assert(clonedGame->GetService("Workspace")->GetChildren().size()==1);std::cout<<"all vertical systems ok\n";
 }
