@@ -3,6 +3,7 @@
 #include "core/instance_factory.h"
 #include "renderer/gles_renderer.h"
 #include "renderer/camera.h"
+#include "physics/physics_world.h"
 #include "scripting/luau_service.h"
 #include <memory>
 #include "platform/android_lifecycle.h"
@@ -33,4 +34,10 @@ extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeSyncSce
  if(!workspace)return; for(auto* c:workspace->GetChildren()) c->Destroy();
  jsize n=env->GetArrayLength(data); if(n%13)return; std::vector<jfloat> v(n);env->GetFloatArrayRegion(data,0,n,v.data());
  for(int i=0;i<n;i+=13){auto p=rsm::InstanceFactory::New("Part");auto* part=dynamic_cast<rsm::BasePart*>(p.get());if(!part)continue;part->SetPosition({v[i],v[i+1],v[i+2]});part->SetSize({v[i+3],v[i+4],v[i+5]});auto cf=part->CFrameValue();cf.rotation={v[i+6],v[i+7],v[i+8]};part->SetCFrame(cf);part->SetColor({v[i+9],v[i+10],v[i+11]});part->SetAnchored(v[i+12]>0.5f);rsm::Instance::SetParent(std::move(p),workspace);}
+}
+
+extern "C" JNIEXPORT jint JNICALL Java_com_rsm_mobile_MainActivity_nativeRaycast(JNIEnv*,jclass,jfloat x,jfloat y,jfloat w,jfloat h){
+ if(!workspace||w<=0||h<=0)return -1;
+ auto hit=rsm::PhysicsWorld().Raycast(game,camera.ScreenRay(x,y,w,h)); if(!hit.part)return -1;
+ int index=0; for(auto*child:workspace->GetChildren()){if(child==hit.part)return index; ++index;} return -1;
 }
