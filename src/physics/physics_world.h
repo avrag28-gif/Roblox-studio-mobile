@@ -1,6 +1,7 @@
 #pragma once
 #include "../core/base_part.h"
 #include "../math/aabb.h"
+#include <cmath>
 #include <unordered_map>
 #include <vector>
 #include <algorithm>
