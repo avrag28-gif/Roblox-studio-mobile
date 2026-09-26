@@ -3,6 +3,11 @@ plugins {
 }
 
 android {
+    def keystorePath = System.getenv("RSM_KEYSTORE_PATH")
+    def keystorePassword = System.getenv("RSM_KEYSTORE_PASSWORD")
+    def keyAlias = System.getenv("RSM_KEY_ALIAS")
+    def keyPassword = System.getenv("RSM_KEY_PASSWORD")
+
     namespace 'com.rsm.mobile'
     compileSdk 35
 
@@ -29,6 +34,17 @@ android {
         }
     }
 
+    signingConfigs {
+        release {
+            if (keystorePath && keystorePassword && keyAlias && keyPassword) {
+                storeFile file(keystorePath)
+                storePassword keystorePassword
+                keyAlias keyAlias
+                keyPassword keyPassword
+            }
+        }
+    }
+
     buildTypes {
         debug {
             debuggable true
@@ -36,6 +52,7 @@ android {
         }
         release {
             debuggable false
+            if (keystorePath && keystorePassword && keyAlias && keyPassword) signingConfig signingConfigs.release
             minifyEnabled false
         }
     }
