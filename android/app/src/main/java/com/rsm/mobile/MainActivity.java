@@ -8,6 +8,7 @@ import android.content.*;
 import android.view.*;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.*;
+import android.opengl.GLSurfaceView;
 import java.util.*;
 import org.json.*;
 
@@ -25,6 +26,8 @@ public class MainActivity extends Activity {
 
   LinearLayout root, explorer, props, bottom;
   Viewport viewport;
+  GLSurfaceView nativeViewport;
+  FrameLayout viewportContainer;
   ArrayList<Obj> objects=new ArrayList<>();
   Obj selected;
   Mode mode=Mode.SELECT;
@@ -62,9 +65,9 @@ public class MainActivity extends Activity {
     LinearLayout body=new LinearLayout(this);
     explorer=new LinearLayout(this);explorer.setOrientation(LinearLayout.VERTICAL);explorer.setBackgroundColor(Color.rgb(28,31,37));
     props=new LinearLayout(this);props.setOrientation(LinearLayout.VERTICAL);props.setBackgroundColor(Color.rgb(28,31,37));
-    viewport=new Viewport(this);
+    viewportContainer=new FrameLayout(this); nativeViewport=new GLSurfaceView(this); nativeViewport.setEGLContextClientVersion(3); nativeViewport.setRenderer(new GLSurfaceView.Renderer(){public void onSurfaceCreated(javax.microedition.khronos.opengles.GL10 gl,javax.microedition.khronos.egl.EGLConfig cfg){nativeSurfaceCreated();} public void onSurfaceChanged(javax.microedition.khronos.opengles.GL10 gl,int w,int h){nativeSurfaceChanged(w,h);} public void onDrawFrame(javax.microedition.khronos.opengles.GL10 gl){nativeSurfaceDraw();}}); nativeViewport.setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY); viewportContainer.addView(nativeViewport,new FrameLayout.LayoutParams(-1,-1)); viewport=new Viewport(this); viewport.setBackgroundColor(Color.TRANSPARENT); viewportContainer.addView(viewport,new FrameLayout.LayoutParams(-1,-1));
     body.addView(explorer,new LinearLayout.LayoutParams(dp(215),-1));
-    body.addView(viewport,new LinearLayout.LayoutParams(0,-1,1));
+    body.addView(viewportContainer,new LinearLayout.LayoutParams(0,-1,1));
     body.addView(props,new LinearLayout.LayoutParams(dp(270),-1));
     root.addView(body,new LinearLayout.LayoutParams(-1,0,1));
     bottom=new LinearLayout(this);bottom.setOrientation(LinearLayout.VERTICAL);bottom.setBackgroundColor(Color.rgb(23,25,30));
@@ -96,7 +99,12 @@ public class MainActivity extends Activity {
     append("INFO",playing?"Play session started from isolated runtime snapshot.":"Play session stopped; editor scene preserved.");viewport.invalidate();
   }
 
-  void refresh(){refreshExplorer();refreshProps();viewport.invalidate();status.setText((playing?"●  PLAY":"●  EDIT")+"   •   "+objects.size()+" objects"+(dirty?"   •   Unsaved":"   •   Saved"));}
+  void refresh(){refreshExplorer();refreshProps();syncNativeScene();viewport.invalidate();status.setText((playing?"●  PLAY":"●  EDIT")+"   •   "+objects.size()+" objects"+(dirty?"   •   Unsaved":"   •   Saved"));}
+  void syncNativeScene(){ if(nativeViewport==null)return; float[] data=new float[objects.size()*8]; int i=0; for(Obj o:objects){data[i++]=o.x;data[i++]=o.y;data[i++]=o.z;data[i++]=o.sx;data[i++]=o.sy;data[i++]=o.sz;data[i++]=0;data[i++]=o.anchored?1:0;} nativeSyncScene(data); }
+  static native void nativeSurfaceCreated();
+  static native void nativeSurfaceChanged(int w,int h);
+  static native void nativeSurfaceDraw();
+  static native void nativeSyncScene(float[] data);
   void refreshExplorer(){
     explorer.removeAllViews();
     TextView h=text("EXPLORER",13);h.setTypeface(Typeface.DEFAULT,Typeface.BOLD);explorer.addView(h,new LinearLayout.LayoutParams(-1,dp(46)));
