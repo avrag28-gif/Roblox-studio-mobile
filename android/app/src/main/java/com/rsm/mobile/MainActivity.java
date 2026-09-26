@@ -97,7 +97,7 @@ public class MainActivity extends Activity {
   void addPart(){Obj o=new Obj("Part");o.x=objects.size()*2-2;o.y=1;objects.add(o);select(o);dirty=true;append("INFO","Created Part");}
   void addModel(){Obj o=new Obj("Model");o.type="Model";o.sx=o.sy=o.sz=4;o.y=2;o.color=Color.rgb(190,100,220);objects.add(o);select(o);dirty=true;append("INFO","Created Model");}
   void togglePlay(Button b){
-    playing=!playing;b.setText(playing?"■  Stop":"▶  Play");status.setText(playing?"●  PLAY   •   runtime scene active":"●  EDIT   •   "+objects.size()+" objects   •   Ready");
+    playing=!playing;b.setText(playing?"■  Stop":"▶  Play");nativeSetPlaying(playing);status.setText(playing?"●  PLAY   •   runtime scene active":"●  EDIT   •   "+objects.size()+" objects   •   Ready");
     append("INFO",playing?"Play session started from isolated runtime snapshot.":"Play session stopped; editor scene preserved.");viewport.invalidate();
   }
 
@@ -113,6 +113,7 @@ public class MainActivity extends Activity {
   static native void nativeCameraZoom(float delta);
   static native boolean nativeRunScript(String source);
   static native int nativeRaycast(float x,float y,float w,float h);
+  static native void nativeSetPlaying(boolean playing);
   void refreshExplorer(){
     explorer.removeAllViews();
     TextView h=text("EXPLORER",13);h.setTypeface(Typeface.DEFAULT,Typeface.BOLD);explorer.addView(h,new LinearLayout.LayoutParams(-1,dp(46)));
