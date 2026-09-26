@@ -27,6 +27,6 @@ public:
    return{time_,a.position*(1-t)+b.position*t,a.rotation*(1-t)+b.rotation*t,a.scale*(1-t)+b.scale*t};
   } return track_.keys.back();
  }
- void Apply(BasePart&part)const{auto k=Sample();auto cf=part.CFrameValue();cf.position=k.position;cf.rotation=k.rotation;part.SetCFrame(cf);part.SetSize(k.scale);}
+ void Apply(BasePart&part)const{auto k=Sample();auto cf=part.CFrameValue();cf.position=k.position;auto qx=Quaternion::FromAxisAngle({1,0,0},k.rotation.x),qy=Quaternion::FromAxisAngle({0,1,0},k.rotation.y),qz=Quaternion::FromAxisAngle({0,0,1},k.rotation.z);cf.rotation=(qz*qy*qx).Normalized();part.SetCFrame(cf);part.SetSize(k.scale);}
 };
 }
