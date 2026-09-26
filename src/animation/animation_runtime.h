@@ -27,6 +27,6 @@ public:
    return{time_,a.position*(1-t)+b.position*t,a.rotation*(1-t)+b.rotation*t,a.scale*(1-t)+b.scale*t};
   } return track_.keys.back();
  }
- void Apply(BasePart&part)const{auto k=Sample();part.SetPosition(k.position);part.SetSize(k.scale);}
+ void Apply(BasePart&part)const{auto k=Sample();auto cf=part.CFrameValue();cf.position=k.position;cf.rotation=k.rotation;part.SetCFrame(cf);part.SetSize(k.scale);}
 };
 }
