@@ -2,6 +2,7 @@
 #include "luau_service.h"
 #include "../core/class_system.h"
 #include <unordered_set>
+#include <unordered_map>
 namespace rsm {
 enum class ScriptKind { Server, Client, Module };
 enum class ScriptState { Stopped, Running, Failed };
