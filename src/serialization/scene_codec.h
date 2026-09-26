@@ -27,6 +27,7 @@ public:
    if(f.size()<3){error="malformed scene record";return nullptr;}
    int depth=0;try{depth=std::stoi(f[0]);}catch(...){error="invalid scene depth";return nullptr;}
    if(depth<0||depth>int(stack.size())){error="invalid scene hierarchy";return nullptr;}
+   if(depth==0 && Unhex(f[1])=="DataModel"){stack.clear();continue;}
    auto obj=InstanceFactory::New(Unhex(f[1]));if(!obj){error="unsupported instance";return nullptr;}obj->SetName(Unhex(f[2]));
    if(auto*p=dynamic_cast<BasePart*>(obj.get());p&&f.size()>=9){
     auto parse3=[](const std::string&v,Vector3&out){std::stringstream q(v);char c1,c2;if(!(q>>out.x>>c1>>out.y>>c2>>out.z)||c1!=','||c2!=',')return false;return true;};
