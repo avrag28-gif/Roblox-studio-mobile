@@ -15,6 +15,7 @@
 #include "../src/editor/editor_document.h"
 #include "../src/gui/output_console.h"
 #include "../src/renderer/backend_selector.h"
+#include "../src/serialization/scene_codec.h"
 #include <cassert>
 #include <iostream>
 using namespace rsm;
@@ -32,6 +33,7 @@ int main(){
  PerformanceRuntime perf;perf.BeginFrame();perf.SetDrawCalls(render.VisibleCount());perf.SetMemory(1024);perf.EndFrame();assert(perf.Frame().drawCalls==1);
  MeshData mesh; std::string objErr; assert(ObjImporter::Parse("v 0 0 0\nv 1 0 0\nv 0 1 0\nf 1 2 3\n",mesh,objErr)); assert(mesh.indices.size()==3);
  auto json=ProjectStore::Save(game);assert(json.find("\"version\"")!=std::string::npos);
+ auto scene=SceneCodec::Save(game);std::string sceneErr;auto restored=SceneCodec::Load(scene,sceneErr);assert(restored&&sceneErr.empty());assert(restored->GetService("Workspace")->FindFirstChild("TestPart"));
  OutputConsole console;console.Push(LogLevel::Info,"ok");assert(console.Entries().size()==1); auto renderer=BackendSelector::Create(); assert(renderer&&renderer->Initialize()); renderer->SetCamera(Camera{}); renderer->Render(game); ResourceCache<int> cache;cache.Put("x",std::make_shared<int>(7),1);assert(*cache.Get("x",2)==7); EditorDocument doc;doc.Open(std::unique_ptr<DataModel>(dynamic_cast<DataModel*>(game.Clone().release())));doc.BeginEdit();assert(doc.CanUndo());assert(doc.Undo());
  auto clone=game.Clone();assert(clone&&dynamic_cast<DataModel*>(clone.get()));std::cout<<"all vertical systems ok\n";
 }
