@@ -29,6 +29,8 @@ public class MainActivity extends Activity {
   GLSurfaceView nativeViewport;
   FrameLayout viewportContainer;
   ArrayList<Obj> objects=new ArrayList<>();
+  ArrayList<String> assetUris=new ArrayList<>();
+  static final int PICK_ASSET=4107;
   Obj selected;
   Mode mode=Mode.SELECT;
   boolean playing=false,dirty=false;
@@ -74,7 +76,7 @@ public class MainActivity extends Activity {
     root.addView(bottom,new LinearLayout.LayoutParams(-1,dp(210)));
     status=text("●  EDIT   •   3 objects   •   Ready",12);status.setPadding(dp(12),0,dp(12),0);
     root.addView(status,new LinearLayout.LayoutParams(-1,dp(34)));
-    setContentView(root);bottom("OUTPUT");refresh();
+    setContentView(root);assetUris.addAll(getSharedPreferences(PREF,0).getStringSet("assets",java.util.Collections.emptySet()));bottom("OUTPUT");refresh();
   }
 
   View topBar(){
@@ -184,7 +186,18 @@ public class MainActivity extends Activity {
     scriptEditor=new ScriptEditorView(this);scriptEditor.setText("-- RSM Luau Script\nlocal Workspace = game:GetService(\"Workspace\")\n\nlocal part = Instance.new(\"Part\")\npart.Name = \"RuntimePart\"\npart.Parent = Workspace\n");scriptEditor.setTextColor(Color.WHITE);scriptEditor.setTextSize(13);scriptEditor.setGravity(Gravity.TOP);scriptEditor.setPadding(dp(12),dp(8),dp(12),dp(8));scriptEditor.setBackgroundColor(Color.rgb(16,18,22));bottom.addView(scriptEditor,new LinearLayout.LayoutParams(-1,0,1));
     Button run=btn("▶  Run Script");run.setOnClickListener(v->{String src=scriptEditor.getText().toString();if(src.trim().isEmpty()){append("ERROR","Script is empty.");return;}boolean ok=nativeRunScript(src);append(ok?"INFO":"ERROR",ok?"Luau script executed in runtime.":"Luau script failed sandbox/compile checks.");Toast.makeText(this,ok?"Script executed":"Script failed",Toast.LENGTH_SHORT).show();refresh();});bottom.addView(run,new LinearLayout.LayoutParams(-1,dp(42)));
   }
-  void showAssets(){LinearLayout p=new LinearLayout(this);p.setOrientation(LinearLayout.VERTICAL);p.addView(text("ASSET BROWSER",13));p.addView(text("▣  Built-in Materials\\n▣  Meshes   (OBJ / GLB pipeline)\\n▣  Textures\\n▣  Sounds\\n▣  Animations\\n\\nImport validates → processes → caches assets.",12));bottom.addView(p,new LinearLayout.LayoutParams(-1,0,1));}
+  void showAssets(){
+    LinearLayout p=new LinearLayout(this);p.setOrientation(LinearLayout.VERTICAL);p.addView(text("ASSET BROWSER",13));
+    Button imp=btn("+ Import Asset");imp.setOnClickListener(v->{Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);i.addCategory(Intent.CATEGORY_OPENABLE);i.setType("*/*");startActivityForResult(i,PICK_ASSET);});p.addView(imp);
+    p.addView(text("Imported assets",12));
+    if(assetUris.isEmpty())p.addView(text("No external assets imported yet.",12));
+    else for(String u:assetUris)p.addView(text("▣  "+u,11));
+    p.addView(text("Pipeline: Import → Validate → Process → Cache → Runtime.",12));bottom.addView(p,new LinearLayout.LayoutParams(-1,0,1));
+  }
+  @Override protected void onActivityResult(int requestCode,int resultCode,Intent data){
+    super.onActivityResult(requestCode,resultCode,data);if(requestCode!=PICK_ASSET||resultCode!=RESULT_OK||data==null||data.getData()==null)return;
+    String uri=data.getData().toString();if(!assetUris.contains(uri)){assetUris.add(uri);getSharedPreferences(PREF,0).edit().putStringSet("assets",new java.util.HashSet<>(assetUris)).apply();append("INFO","Imported asset: "+uri);dirty=true;}bottom("ASSETS");
+  }
   void showDebug(){bottom.addView(text("CPU  —  ready\\nGPU  —  renderer backend: Android surface\\nScene objects  —  "+objects.size()+"\\nPhysics bodies  —  "+objects.size()+"\\nScripts  —  sandbox\\nMemory  —  runtime monitored",12),new LinearLayout.LayoutParams(-1,0,1));}
   void append(String level,String msg){if(output==null)output=text("",12);output.append("["+level+"] "+msg+"\\n");}
   void showTools(){bottom("OUTPUT");new AlertDialog.Builder(this).setTitle("Studio Tools").setItems(new String[]{"Move","Rotate","Scale","Output","Script","Assets","Debug","Project Settings"},(d,w)->{if(w==0)mode=Mode.MOVE;else if(w==1)mode=Mode.ROTATE;else if(w==2)mode=Mode.SCALE;else if(w==3)bottom("OUTPUT");else if(w==4)bottom("SCRIPT");else if(w==5)bottom("ASSETS");else if(w==6)bottom("DEBUG");else settings();}).show();}
