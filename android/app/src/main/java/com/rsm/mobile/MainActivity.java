@@ -112,7 +112,8 @@ public class MainActivity extends Activity {
     explorer.removeAllViews();
     TextView h=text("EXPLORER",13);h.setTypeface(Typeface.DEFAULT,Typeface.BOLD);explorer.addView(h,new LinearLayout.LayoutParams(-1,dp(46)));
     addTree("▾  Workspace",null,true);
-    for(Obj o:objects) addTree("    "+(o.type.equals("Model")?"◇ ":"▣ ")+o.name,o,false);
+    for(Obj o:objects) if("Workspace".equals(o.parent)) addTree("    "+(o.type.equals("Model")?"◇ ":"▣ ")+o.name,o,false);
+    for(Obj parent:objects) if("Model".equals(parent.type)) for(Obj o:objects) if(parent.id.equals(o.parent)) addTree("        "+(o.type.equals("Model")?"◇ ":"▣ ")+o.name,o,false);
   }
   void addTree(String s,Obj o,boolean header){
     Button b=btn(s);b.setGravity(Gravity.LEFT|Gravity.CENTER_VERTICAL);b.setBackgroundColor(o!=null&&o==selected?Color.rgb(55,72,92):Color.TRANSPARENT);
@@ -136,7 +137,9 @@ public class MainActivity extends Activity {
     Switch anchored=new Switch(this);anchored.setText("Anchored");anchored.setTextColor(Color.WHITE);anchored.setChecked(selected.anchored);anchored.setOnCheckedChangeListener((b,v)->{selected.anchored=v;changed();});props.addView(anchored);
     Switch collide=new Switch(this);collide.setText("CanCollide");collide.setTextColor(Color.WHITE);collide.setChecked(selected.collide);collide.setOnCheckedChangeListener((b,v)->{selected.collide=v;changed();});props.addView(collide);
     section("ACTIONS");
-    LinearLayout acts=new LinearLayout(this);Button dup=btn("Duplicate");dup.setOnClickListener(v->duplicate());Button del=btn("Delete");del.setOnClickListener(v->deleteSelected());acts.addView(dup,new LinearLayout.LayoutParams(0,dp(46),1));acts.addView(del,new LinearLayout.LayoutParams(0,dp(46),1));props.addView(acts);
+    LinearLayout acts=new LinearLayout(this);Button dup=btn("Duplicate");dup.setOnClickListener(v->duplicate());Button del=btn("Delete");del.setOnClickListener(v->deleteSelected());
+    Button reparent=btn("Parent");reparent.setOnClickListener(v->chooseParent());
+    acts.addView(dup,new LinearLayout.LayoutParams(0,dp(46),1));acts.addView(reparent,new LinearLayout.LayoutParams(0,dp(46),1));acts.addView(del,new LinearLayout.LayoutParams(0,dp(46),1));props.addView(acts);
   }
   void section(String s){TextView t=text(s,11);t.setTextColor(Color.LTGRAY);t.setPadding(dp(10),dp(12),dp(10),dp(4));props.addView(t);}
   interface Triple{void go(float a,float b,float c);}
@@ -155,8 +158,19 @@ public class MainActivity extends Activity {
   }
 
   void changed(){dirty=true;refreshExplorer();viewport.invalidate();status.setText("●  "+(playing?"PLAY":"EDIT")+"   •   "+objects.size()+" objects   •   Unsaved");}
-  void duplicate(){if(selected==null)return;Obj n=new Obj(selected.name+" Copy");n.type=selected.type;n.x=selected.x+2;n.y=selected.y;n.z=selected.z;n.sx=selected.sx;n.sy=selected.sy;n.sz=selected.sz;n.color=selected.color;n.anchored=selected.anchored;n.collide=selected.collide;objects.add(n);select(n);changed();append("INFO","Duplicated "+selected.name);}
-  void deleteSelected(){if(selected==null)return;String n=selected.name;objects.remove(selected);selected=null;changed();append("INFO","Deleted "+n);}
+  void chooseParent(){
+    if(selected==null)return;
+    ArrayList<String> names=new ArrayList<>();ArrayList<Obj> choices=new ArrayList<>();
+    names.add("Workspace");choices.add(null);
+    for(Obj o:objects) if(o!=selected && "Model".equals(o.type) && !isDescendant(o,selected)) {names.add(o.name);choices.add(o);}
+    new AlertDialog.Builder(this).setTitle("Reparent "+selected.name).setItems(names.toArray(new String[0]),(d,w)->{
+      selected.parent=choices.get(w)==null?"Workspace":choices.get(w).id;changed();append("INFO","Reparented "+selected.name);
+    }).show();
+  }
+  boolean isDescendant(Obj candidate,Obj node){String p=candidate.parent;while(!"Workspace".equals(p)){if(p.equals(node.id))return true;Obj q=find(p);if(q==null)break;p=q.parent;}return false;}
+  Obj find(String id){for(Obj o:objects)if(o.id.equals(id))return o;return null;}
+  void duplicate(){if(selected==null)return;Obj n=new Obj(selected.name+" Copy");n.type=selected.type;n.parent=selected.parent;n.x=selected.x+2;n.y=selected.y;n.z=selected.z;n.sx=selected.sx;n.sy=selected.sy;n.sz=selected.sz;n.color=selected.color;n.anchored=selected.anchored;n.collide=selected.collide;objects.add(n);select(n);changed();append("INFO","Duplicated "+selected.name);}
+  void deleteSelected(){if(selected==null)return;String n=selected.name;String removed=selected.id;ArrayList<Obj> gone=new ArrayList<>();for(Obj o:objects){String p=o.parent;while(!"Workspace".equals(p)){if(p.equals(removed)){gone.add(o);break;}Obj q=find(p);if(q==null)break;p=q.parent;}}gone.add(selected);objects.removeAll(gone);selected=null;changed();append("INFO","Deleted "+n);}
   void cycleColor(){int[] c={Color.rgb(90,160,240),Color.rgb(240,100,90),Color.rgb(100,220,130),Color.rgb(220,190,70),Color.rgb(190,100,220),Color.WHITE};int i=0;for(int j=0;j<c.length;j++)if(selected.color==c[j])i=(j+1)%c.length;selected.color=c[i];changed();refreshProps();}
   
   void bottom(String tab){
@@ -176,7 +190,7 @@ public class MainActivity extends Activity {
 
   void saveProject(){
     try{
-      JSONArray a=new JSONArray();for(Obj o:objects){JSONObject j=new JSONObject();j.put("id",o.id);j.put("name",o.name);j.put("type",o.type);j.put("x",o.x);j.put("y",o.y);j.put("z",o.z);j.put("sx",o.sx);j.put("sy",o.sy);j.put("sz",o.sz);j.put("rx",o.rx);j.put("ry",o.ry);j.put("rz",o.rz);j.put("color",o.color);j.put("anchored",o.anchored);j.put("collide",o.collide);a.put(j);}
+      JSONArray a=new JSONArray();for(Obj o:objects){JSONObject j=new JSONObject();j.put("id",o.id);j.put("name",o.name);j.put("type",o.type);j.put("parent",o.parent);j.put("x",o.x);j.put("y",o.y);j.put("z",o.z);j.put("sx",o.sx);j.put("sy",o.sy);j.put("sz",o.sz);j.put("rx",o.rx);j.put("ry",o.ry);j.put("rz",o.rz);j.put("color",o.color);j.put("anchored",o.anchored);j.put("collide",o.collide);a.put(j);}
       String payload=a.toString();java.io.File dst=new java.io.File(getFilesDir(),PROJECT_FILE),bak=new java.io.File(getFilesDir(),PROJECT_FILE+".bak"),tmp=new java.io.File(getFilesDir(),PROJECT_FILE+".tmp");if(dst.exists())try(java.io.FileInputStream in=new java.io.FileInputStream(dst);java.io.FileOutputStream out=new java.io.FileOutputStream(bak)){byte[] buf=new byte[8192];int n;while((n=in.read(buf))>0)out.write(buf,0,n);}try(java.io.FileOutputStream out=new java.io.FileOutputStream(tmp)){out.write(payload.getBytes("UTF-8"));out.flush();}if(!tmp.renameTo(dst))throw new java.io.IOException("atomic project replace failed");getSharedPreferences(PREF,0).edit().putInt("version",3).putString("scene",payload).putLong("savedAt",System.currentTimeMillis()).apply();dirty=false;refresh();append("INFO","Project saved (version 3).");
     }catch(Exception e){append("ERROR",e.toString());}
   }
@@ -184,7 +198,7 @@ public class MainActivity extends Activity {
 
   void loadProject(){
     String s=null; try{java.io.File dst=new java.io.File(getFilesDir(),PROJECT_FILE);if(dst.exists())s=new String(java.nio.file.Files.readAllBytes(dst.toPath()),"UTF-8"); else {java.io.File bak=new java.io.File(getFilesDir(),PROJECT_FILE+".bak");if(bak.exists())s=new String(java.nio.file.Files.readAllBytes(bak.toPath()),"UTF-8");}}catch(Exception ignored){} if(s==null)s=getSharedPreferences(PREF,0).getString("scene",null); if(s==null){Toast.makeText(this,"No saved project",Toast.LENGTH_SHORT).show();return;}
-    try{JSONArray a=new JSONArray(s);objects.clear();for(int i=0;i<a.length();i++){JSONObject j=a.getJSONObject(i);Obj o=new Obj(j.getString("name"));o.id=j.optString("id",o.id);o.type=j.optString("type","Part");o.x=(float)j.optDouble("x");o.y=(float)j.optDouble("y");o.z=(float)j.optDouble("z");o.sx=(float)j.optDouble("sx",2);o.sy=(float)j.optDouble("sy",2);o.sz=(float)j.optDouble("sz",2);o.rx=(float)j.optDouble("rx");o.ry=(float)j.optDouble("ry");o.rz=(float)j.optDouble("rz");o.color=j.optInt("color",Color.rgb(90,160,240));o.anchored=j.optBoolean("anchored",true);o.collide=j.optBoolean("collide",true);objects.add(o);}selected=null;dirty=false;refresh();append("INFO","Project loaded.");}catch(Exception e){append("ERROR","Load failed: "+e.getMessage());}
+    try{JSONArray a=new JSONArray(s);objects.clear();for(int i=0;i<a.length();i++){JSONObject j=a.getJSONObject(i);Obj o=new Obj(j.getString("name"));o.id=j.optString("id",o.id);o.type=j.optString("type","Part");o.parent=j.optString("parent","Workspace");o.x=(float)j.optDouble("x");o.y=(float)j.optDouble("y");o.z=(float)j.optDouble("z");o.sx=(float)j.optDouble("sx",2);o.sy=(float)j.optDouble("sy",2);o.sz=(float)j.optDouble("sz",2);o.rx=(float)j.optDouble("rx");o.ry=(float)j.optDouble("ry");o.rz=(float)j.optDouble("rz");o.color=j.optInt("color",Color.rgb(90,160,240));o.anchored=j.optBoolean("anchored",true);o.collide=j.optBoolean("collide",true);objects.add(o);}selected=null;dirty=false;refresh();append("INFO","Project loaded.");}catch(Exception e){append("ERROR","Load failed: "+e.getMessage());}
   }
 
   class Viewport extends View{
