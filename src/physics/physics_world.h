@@ -14,9 +14,9 @@ public:
  void SetRestitution(float v){restitution_=std::clamp(v,0.f,1.f);}void SetFriction(float v){friction_=std::clamp(v,0.f,1.f);}
  void Step(float dt,const Instance&root){
   if(dt<=0)return;std::vector<BasePart*> bodies;
-  for(auto*x:root.GetDescendants())if(auto*p=dynamic_cast<BasePart*>(x)){bodies.push_back(p);if(p->Anchored())velocity_.erase(p);else velocity_[p]+=gravity_*dt;}
+  for(auto*x:root.GetDescendants())if(auto*p=dynamic_cast<BasePart*>(x)){bodies.push_back(p);if(p->Anchored()){velocity_.erase(p);sleep_.erase(p);}else {velocity_[p]+=gravity_*dt; if(sleep_.count(p)) continue;}}
   for(auto*p:bodies)if(!p->Anchored()){auto&v=velocity_[p];auto pos=p->Position()+v*dt;auto half=p->Size()*.5f;
-   if(pos.y-half.y<0){pos.y=half.y;if(v.y<0)v.y=-v.y*restitution_;v.x*=friction_;v.z*=friction_;}
+   if(pos.y-half.y<0){pos.y=half.y;if(v.y<0)v.y=-v.y*restitution_;v.x*=friction_;v.z*=friction_;} if(v.Length()<sleepThreshold_ && std::abs(pos.y-half.y)<.001f){v={0,0,0};sleep_[p]=0;}
    p->SetPosition(pos);
   }
   for(size_t i=0;i<bodies.size();++i)for(size_t j=i+1;j<bodies.size();++j){auto*a=bodies[i];auto*b=bodies[j];if(!a->CanCollide()||!b->CanCollide())continue;if(!Bounds(a,a->Position()).Intersects(Bounds(b,b->Position())))continue;
@@ -26,6 +26,6 @@ public:
  }
  RaycastHit Raycast(const Instance&root,const Ray&r)const{RaycastHit best;best.distance=1e30f;for(auto*x:root.GetDescendants())if(auto*p=dynamic_cast<BasePart*>(x))if(p->CanQuery()){auto h=p->Size()*.5f;AABB b{p->Position()-h,p->Position()+h};float t;if(b.IntersectRay(r,t)&&t>=0&&t<best.distance)best={p,t,r.At(t)};}if(!best.part)best.distance=0;return best;}
  bool Overlap(const Instance&root,const AABB&q)const{for(auto*x:root.GetDescendants())if(auto*p=dynamic_cast<BasePart*>(x))if(p->CanQuery()&&Bounds(p,p->Position()).Intersects(q))return true;return false;}
- Vector3 Gravity()const{return gravity_;}void Clear(){velocity_.clear();}
+ Vector3 Gravity()const{return gravity_;}void Clear(){velocity_.clear();sleep_.clear();} bool IsSleeping(const BasePart*p)const{return sleep_.count(p)!=0;}
 };
 }
