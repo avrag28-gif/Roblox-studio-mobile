@@ -27,6 +27,7 @@ public:
  }
  RaycastHit Raycast(const Instance&root,const Ray&r)const{RaycastHit best;best.distance=1e30f;for(auto*x:root.GetDescendants())if(auto*p=dynamic_cast<BasePart*>(x))if(p->CanQuery()){auto h=p->Size()*.5f;AABB b{p->Position()-h,p->Position()+h};float t;if(b.IntersectRay(r,t)&&t>=0&&t<best.distance)best={p,t,r.At(t)};}if(!best.part)best.distance=0;return best;}
  bool Overlap(const Instance&root,const AABB&q)const{for(auto*x:root.GetDescendants())if(auto*p=dynamic_cast<BasePart*>(x))if(p->CanQuery()&&Bounds(p,p->Position()).Intersects(q))return true;return false;}
+ void SetGravity(Vector3 g){gravity_=g;}
  Vector3 Gravity()const{return gravity_;}void Clear(){velocity_.clear();sleep_.clear();} bool IsSleeping(const BasePart*p)const{return sleep_.count(p)!=0;}
 };
 }
