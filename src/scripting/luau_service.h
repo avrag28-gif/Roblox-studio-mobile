@@ -32,7 +32,11 @@ class LuauService{
     int run=lua_pcall(L,0,0,0);if(run!=0){diagnostics_.push_back({1,ErrorText(L)});lua_close(L);return false;}
     if(log_&&source.find("print(")!=std::string::npos)log_("Luau script executed");lua_close(L);return true;
 #else
-    int balance=0,line=1;for(char c:source){if(c=='\n')++line;else if(c=='(')++balance;else if(c==')'&&--balance<0){diagnostics_.push_back({line,"unexpected ')'"});return false;}}if(balance){diagnostics_.push_back({line,"unclosed '('"});return false;}if(log_&&source.find("print(")!=std::string::npos)log_("Luau-compatible script dispatched");return true;
+    int balance=0,line=1;for(char c:source){if(c=='\n')++line;else if(c=='(')++balance;else if(c==')'&&--balance<0){diagnostics_.push_back({line,"unexpected ')'"});return false;}}if(balance){diagnostics_.push_back({line,"unclosed '('"});return false;}if(game_){
+      auto marker=source.find("Instance.new(");
+      if(marker!=std::string::npos){auto q=source.find('"',marker);auto q2=q==std::string::npos?std::string::npos:source.find('"',q+1);if(q!=std::string::npos&&q2!=std::string::npos){auto obj=InstanceFactory::New(source.substr(q+1,q2-q-1));if(obj){auto namePos=source.find(".Name",q2);if(namePos!=std::string::npos){auto nq=source.find('"',namePos);auto nq2=nq==std::string::npos?std::string::npos:source.find('"',nq+1);if(nq!=std::string::npos&&nq2!=std::string::npos)obj->SetName(source.substr(nq+1,nq2-nq-1));}auto*ws=game_->GetService("Workspace");Instance::SetParent(std::move(obj),ws?ws:game_);if(log_)log_("Luau-compatible Instance.new executed");}}}
+      }
+      if(log_&&source.find("print(")!=std::string::npos)log_("Luau-compatible script dispatched");return true;
 #endif
   }
   const std::vector<ScriptDiagnostic>&Diagnostics()const{return diagnostics_;}
