@@ -15,7 +15,7 @@ public:
  void SetRestitution(float v){restitution_=std::clamp(v,0.f,1.f);}void SetFriction(float v){friction_=std::clamp(v,0.f,1.f);}
  void Step(float dt,const Instance&root){
   if(dt<=0)return;std::vector<BasePart*> bodies;
-  for(auto*x:root.GetDescendants())if(auto*p=dynamic_cast<BasePart*>(x)){bodies.push_back(p);if(p->Anchored()){velocity_.erase(p);sleep_.erase(p);}else {velocity_[p]+=gravity_*dt; if(sleep_.count(p)) continue;}}
+  for(auto*x:root.GetDescendants())if(auto*p=dynamic_cast<BasePart*>(x)){bodies.push_back(p);if(p->Anchored()){velocity_.erase(p);sleep_.erase(p);}else {velocity_[p]+=gravity_*dt; if(sleep_.count(p)){sleep_[p]+=dt;if(sleep_[p]>=.5f)continue;sleep_.erase(p);}}}
   for(auto*p:bodies)if(!p->Anchored()){auto&v=velocity_[p];auto pos=p->Position()+v*dt;auto half=p->Size()*.5f;
    if(pos.y-half.y<0){pos.y=half.y;if(v.y<0)v.y=-v.y*restitution_;v.x*=friction_;v.z*=friction_;} if(v.Length()<sleepThreshold_ && std::abs(pos.y-half.y)<.001f){v={0,0,0};sleep_[p]=0;}
    p->SetPosition(pos);
