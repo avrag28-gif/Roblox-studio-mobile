@@ -194,13 +194,14 @@ public class MainActivity extends Activity {
     Button imp=btn("+ Import Asset");imp.setOnClickListener(v->{Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);i.addCategory(Intent.CATEGORY_OPENABLE);i.setType("*/*");startActivityForResult(i,PICK_ASSET);});p.addView(imp);
     p.addView(text("Imported assets",12));
     if(assetUris.isEmpty())p.addView(text("No external assets imported yet.",12));
-    else for(String u:assetUris)p.addView(text("▣  "+u,11));
+    else for(String u:assetUris){LinearLayout row=new LinearLayout(this);row.setGravity(Gravity.CENTER_VERTICAL);row.addView(text("▣  "+u,11),new LinearLayout.LayoutParams(0,dp(42),1));Button play=btn("Play");play.setOnClickListener(v->playAudio(u));row.addView(play,new LinearLayout.LayoutParams(dp(70),dp(42)));p.addView(row);}
     p.addView(text("Pipeline: Import → Validate → Process → Cache → Runtime.",12));bottom.addView(p,new LinearLayout.LayoutParams(-1,0,1));
   }
   @Override protected void onActivityResult(int requestCode,int resultCode,Intent data){
     super.onActivityResult(requestCode,resultCode,data);if(requestCode!=PICK_ASSET||resultCode!=RESULT_OK||data==null||data.getData()==null)return;
     String uri=data.getData().toString();try{int flags=data.getFlags()&(Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_WRITE_URI_PERMISSION);getContentResolver().takePersistableUriPermission(data.getData(),flags);}catch(Exception ignored){}if(!assetUris.contains(uri)){assetUris.add(uri);getSharedPreferences(PREF,0).edit().putStringSet("assets",new java.util.HashSet<>(assetUris)).apply();append("INFO","Imported asset: "+uri);dirty=true;}bottom("ASSETS");
   }
+  void playAudio(String uri){try{if(audioPlayer!=null)audioPlayer.release();audioPlayer=new AndroidAudioPlayer();if(!audioPlayer.load(getContentResolver().openInputStream(android.net.Uri.parse(uri))))throw new IOException("Unsupported WAV asset");audioPlayer.setLooping(false);audioPlayer.play();append("INFO","Audio playback started.");}catch(Exception e){append("ERROR","Audio: "+e.getMessage());}}
   void showDebug(){bottom.addView(text("CPU  —  ready\\nGPU  —  renderer backend: Android surface\\nScene objects  —  "+objects.size()+"\\nPhysics bodies  —  "+objects.size()+"\\nScripts  —  sandbox\\nMemory  —  runtime monitored",12),new LinearLayout.LayoutParams(-1,0,1));}
   void append(String level,String msg){if(output==null)output=text("",12);output.append("["+level+"] "+msg+"\\n");}
   void showTools(){bottom("OUTPUT");new AlertDialog.Builder(this).setTitle("Studio Tools").setItems(new String[]{"Move","Rotate","Scale","Output","Script","Assets","Debug","Project Settings"},(d,w)->{if(w==0)mode=Mode.MOVE;else if(w==1)mode=Mode.ROTATE;else if(w==2)mode=Mode.SCALE;else if(w==3)bottom("OUTPUT");else if(w==4)bottom("SCRIPT");else if(w==5)bottom("ASSETS");else if(w==6)bottom("DEBUG");else settings();}).show();}
@@ -214,7 +215,7 @@ public class MainActivity extends Activity {
   }
   @Override protected void onResume(){super.onResume();nativeLifecycle(1);}
   @Override protected void onPause(){nativeLifecycle(2);super.onPause();if(dirty)saveProject();}
-  @Override protected void onDestroy(){nativeSurfaceDestroyed();nativeLifecycle(0);super.onDestroy();}
+  @Override protected void onDestroy(){if(audioPlayer!=null)audioPlayer.release();nativeSurfaceDestroyed();nativeLifecycle(0);super.onDestroy();}
 
   void loadProject(){
     String s=null; try{java.io.File dst=new java.io.File(getFilesDir(),PROJECT_FILE);if(dst.exists())s=new String(java.nio.file.Files.readAllBytes(dst.toPath()),"UTF-8"); else {java.io.File bak=new java.io.File(getFilesDir(),PROJECT_FILE+".bak");if(bak.exists())s=new String(java.nio.file.Files.readAllBytes(bak.toPath()),"UTF-8");}}catch(Exception ignored){} if(s==null){java.io.File rec=new java.io.File(getFilesDir(),RECOVERY_FILE);if(rec.exists()){try{s=new String(java.nio.file.Files.readAllBytes(rec.toPath()),"UTF-8");append("WARNING","Recovered unsaved project state.");}catch(Exception ignored){}}} if(s==null)s=getSharedPreferences(PREF,0).getString("scene",null); if(s==null){Toast.makeText(this,"No saved project",Toast.LENGTH_SHORT).show();return;}
