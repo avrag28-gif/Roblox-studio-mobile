@@ -102,7 +102,7 @@ public class MainActivity extends Activity {
   }
 
   void refresh(){refreshExplorer();refreshProps();syncNativeScene();viewport.invalidate();status.setText((playing?"●  PLAY":"●  EDIT")+"   •   "+objects.size()+" objects"+(dirty?"   •   Unsaved":"   •   Saved"));}
-  void syncNativeScene(){ if(nativeViewport==null)return; float[] data=new float[objects.size()*8]; int i=0; for(Obj o:objects){data[i++]=o.x;data[i++]=o.y;data[i++]=o.z;data[i++]=o.sx;data[i++]=o.sy;data[i++]=o.sz;data[i++]=0;data[i++]=o.anchored?1:0;} nativeSyncScene(data); }
+  void syncNativeScene(){ if(nativeViewport==null)return; float[] data=new float[objects.size()*13]; int i=0; for(Obj o:objects){data[i++]=o.x;data[i++]=o.y;data[i++]=o.z;data[i++]=o.sx;data[i++]=o.sy;data[i++]=o.sz;data[i++]=o.rx;data[i++]=o.ry;data[i++]=o.rz;data[i++]=Color.red(o.color)/255f;data[i++]=Color.green(o.color)/255f;data[i++]=Color.blue(o.color)/255f;data[i++]=o.anchored?1:0;} nativeSyncScene(data); }
   static native void nativeSurfaceCreated();
   static native void nativeSurfaceChanged(int w,int h);
   static native void nativeSurfaceDraw();
@@ -237,7 +237,7 @@ public class MainActivity extends Activity {
       p.setStyle(Paint.Style.FILL);p.setTextSize(dp(10));p.setColor(Color.WHITE);c.drawText(o.name,x-sx/2,y+sy/2+dp(14),p);
     }
     public boolean onTouchEvent(android.view.MotionEvent e){
-      if(e.getPointerCount()>1){float x0=e.getX(0),y0=e.getY(0),x1=e.getX(1),y1=e.getY(1);float dx=(x0+x1)*.5f-lastX,dy=(y0+y1)*.5f-lastY;float span=(float)Math.hypot(x1-x0,y1-y0);if(e.getAction()==MotionEvent.ACTION_POINTER_DOWN||lastSpan==0){lastSpan=span;lastAngle=(float)Math.atan2(y1-y0,x1-x0);}else if(e.getAction()==MotionEvent.ACTION_MOVE){nativeCameraOrbit(-dx*.006f,dy*.006f);nativeCameraZoom((lastSpan-span)*.02f);lastSpan=span;}lastX=(x0+x1)*.5f;lastY=(y0+y1)*.5f;return true;}
+      if(e.getPointerCount()>1){float x0=e.getX(0),y0=e.getY(0),x1=e.getX(1),y1=e.getY(1);float dx=(x0+x1)*.5f-lastX,dy=(y0+y1)*.5f-lastY;float span=(float)Math.hypot(x1-x0,y1-y0);if(e.getAction()==MotionEvent.ACTION_POINTER_DOWN||lastSpan==0){lastSpan=span;lastAngle=(float)Math.atan2(y1-y0,x1-x0);}else if(e.getAction()==MotionEvent.ACTION_MOVE){float angle=(float)Math.atan2(y1-y0,x1-x0);nativeCameraOrbit(-dx*.006f+(angle-lastAngle)*0.35f,dy*.006f);nativeCameraZoom((lastSpan-span)*.02f);lastSpan=span;lastAngle=angle;}lastX=(x0+x1)*.5f;lastY=(y0+y1)*.5f;return true;}
       float x=e.getX(),y=e.getY();if(e.getAction()==MotionEvent.ACTION_DOWN){lastX=x;lastY=y;drag=true;return true;}
       if(e.getAction()==MotionEvent.ACTION_UP){lastSpan=0;Obj hit=hit(x,y);if(hit!=null){select(hit);}else if(mode==Mode.SELECT){selected=null;refreshProps();invalidate();}drag=false;return true;}
       if(e.getAction()==MotionEvent.ACTION_MOVE&&drag&&selected!=null&&mode!=Mode.SELECT){applyGesture(selected,x-lastX,y-lastY);lastX=x;lastY=y;return true;}
