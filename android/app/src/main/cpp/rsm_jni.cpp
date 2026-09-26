@@ -4,6 +4,7 @@
 #include "renderer/gles_renderer.h"
 #include "renderer/camera.h"
 #include "physics/physics_world.h"
+#include "runtime/play_session.h"
 #include "scripting/luau_service.h"
 #include <memory>
 #include "platform/android_lifecycle.h"
@@ -13,6 +14,8 @@ static std::unique_ptr<rsm::GLESRenderer> renderer;
 static rsm::Instance* workspace=nullptr;
 static rsm::Camera camera;
 static std::string lastScriptLog;
+static std::unique_ptr<rsm::DataModel> runtimeGame;
+static rsm::PhysicsWorld runtimePhysics;
 extern "C" JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM*,void*){game.InitializeDefaultServices();workspace=game.GetService("Workspace");return JNI_VERSION_1_6;}
 extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeSurfaceCreated(JNIEnv*,jclass){
  lifecycle.SurfaceCreated(); renderer=std::make_unique<rsm::GLESRenderer>(); renderer->Initialize();
@@ -26,7 +29,9 @@ extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeLifecyc
  else lifecycle.Pause();
 }
 extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeSurfaceChanged(JNIEnv*,jclass,jint w,jint h){lifecycle.SurfaceChanged(w,h);if(renderer)renderer->Resize(w,h);}
-extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeSurfaceDraw(JNIEnv*,jclass){if(renderer&&workspace)renderer->Render(game);}
+extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeSurfaceDraw(JNIEnv*,jclass){
+ if(renderer){if(runtimeGame){runtimePhysics.Step(1.f/60.f,*runtimeGame);renderer->Render(*runtimeGame);}else renderer->Render(game);}
+}
 extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeCameraOrbit(JNIEnv*,jclass,jfloat yaw,jfloat pitch){camera.Orbit(yaw,pitch);if(renderer)renderer->SetCamera(camera);}
 extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeCameraZoom(JNIEnv*,jclass,jfloat delta){camera.Zoom(delta);if(renderer)renderer->SetCamera(camera);}
 extern "C" JNIEXPORT jboolean JNICALL Java_com_rsm_mobile_MainActivity_nativeRunScript(JNIEnv* env,jclass,jstring src){const char* raw=env->GetStringUTFChars(src,nullptr);rsm::LuauService service([](std::string m){lastScriptLog=std::move(m);});service.Bind(&game);bool ok=service.CompileAndRun(raw?raw:"");env->ReleaseStringUTFChars(src,raw);return ok?JNI_TRUE:JNI_FALSE;}
@@ -40,4 +45,9 @@ extern "C" JNIEXPORT jint JNICALL Java_com_rsm_mobile_MainActivity_nativeRaycast
  if(!workspace||w<=0||h<=0)return -1;
  auto hit=rsm::PhysicsWorld().Raycast(game,camera.ScreenRay(x,y,w,h)); if(!hit.part)return -1;
  int index=0; for(auto*child:workspace->GetChildren()){if(child==hit.part)return index; ++index;} return -1;
+}
+
+extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeSetPlaying(JNIEnv*,jclass,jboolean playing){
+ if(playing){auto clone=game.Clone();auto*dm=dynamic_cast<rsm::DataModel*>(clone.release());if(dm){runtimeGame.reset(dm);runtimePhysics.Clear();}}
+ else {runtimeGame.reset();runtimePhysics.Clear();}
 }
