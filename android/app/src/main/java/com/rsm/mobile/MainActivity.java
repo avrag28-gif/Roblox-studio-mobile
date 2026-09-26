@@ -104,7 +104,7 @@ public class MainActivity extends Activity {
   static native void nativeSurfaceCreated();
   static native void nativeSurfaceChanged(int w,int h);
   static native void nativeSurfaceDraw();
-  static native void nativeSyncScene(float[] data);
+  static native void nativeSyncScene(float[] data);\n  static native void nativeCameraOrbit(float yaw,float pitch);\n  static native void nativeCameraZoom(float delta);
   void refreshExplorer(){
     explorer.removeAllViews();
     TextView h=text("EXPLORER",13);h.setTypeface(Typeface.DEFAULT,Typeface.BOLD);explorer.addView(h,new LinearLayout.LayoutParams(-1,dp(46)));
@@ -186,12 +186,12 @@ public class MainActivity extends Activity {
 
   class Viewport extends View{
     Paint p=new Paint(3);float lastX,lastY;boolean drag;
-    Viewport(Context c){super(c);setFocusable(true);setBackgroundColor(Color.rgb(14,16,20));}
+    float lastSpan,lastAngle;\n    Viewport(Context c){super(c);setFocusable(true);setBackgroundColor(Color.TRANSPARENT);setZ(2);}
     protected void onDraw(Canvas c){
       super.onDraw(c);float w=getWidth(),h=getHeight();p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(1);p.setColor(Color.rgb(43,47,55));
       float grid=dp(32);for(float x=w/2;x<w;x+=grid)c.drawLine(x,0,x,h,p);for(float x=w/2;x>0;x-=grid)c.drawLine(x,0,x,h,p);for(float y=h/2;y<h;y+=grid)c.drawLine(0,y,w,y,p);for(float y=h/2;y>0;y-=grid)c.drawLine(0,y,w,y,p);
       p.setColor(Color.rgb(100,105,115));p.setStrokeWidth(2);c.drawLine(0,h/2,w,h/2,p);c.drawLine(w/2,0,w/2,h,p);
-      for(Obj o:objects)drawObj(c,o,w/2,h/2);
+      if(selected!=null){float scale=dp(22),x=w/2+selected.x*scale,y=h/2-selected.y*scale;p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(dp(2));p.setColor(Color.WHITE);c.drawCircle(x,y,dp(18),p);p.setStyle(Paint.Style.FILL);}
       p.setStyle(Paint.Style.FILL);p.setTextSize(dp(14));p.setColor(Color.WHITE);c.drawText("3D VIEWPORT   •   "+mode.name()+"   •   "+objects.size()+" objects",dp(14),dp(24),p);
       p.setTextSize(dp(11));p.setColor(Color.LTGRAY);c.drawText("1-finger select/drag  •  2-finger camera  •  pinch zoom",dp(14),h-dp(12),p);
     }
@@ -202,9 +202,9 @@ public class MainActivity extends Activity {
       p.setStyle(Paint.Style.FILL);p.setTextSize(dp(10));p.setColor(Color.WHITE);c.drawText(o.name,x-sx/2,y+sy/2+dp(14),p);
     }
     public boolean onTouchEvent(android.view.MotionEvent e){
-      if(e.getPointerCount()>1){lastX=e.getX();lastY=e.getY();return true;}
+      if(e.getPointerCount()>1){float x0=e.getX(0),y0=e.getY(0),x1=e.getX(1),y1=e.getY(1);float dx=(x0+x1)*.5f-lastX,dy=(y0+y1)*.5f-lastY;float span=(float)Math.hypot(x1-x0,y1-y0);if(e.getAction()==MotionEvent.ACTION_POINTER_DOWN||lastSpan==0){lastSpan=span;lastAngle=(float)Math.atan2(y1-y0,x1-x0);}else if(e.getAction()==MotionEvent.ACTION_MOVE){nativeCameraOrbit(-dx*.006f,dy*.006f);nativeCameraZoom((lastSpan-span)*.02f);lastSpan=span;}lastX=(x0+x1)*.5f;lastY=(y0+y1)*.5f;return true;}
       float x=e.getX(),y=e.getY();if(e.getAction()==MotionEvent.ACTION_DOWN){lastX=x;lastY=y;drag=true;return true;}
-      if(e.getAction()==MotionEvent.ACTION_UP){Obj hit=hit(x,y);if(hit!=null){select(hit);}else if(mode==Mode.SELECT){selected=null;refreshProps();invalidate();}drag=false;return true;}
+      if(e.getAction()==MotionEvent.ACTION_UP){lastSpan=0;Obj hit=hit(x,y);if(hit!=null){select(hit);}else if(mode==Mode.SELECT){selected=null;refreshProps();invalidate();}drag=false;return true;}
       if(e.getAction()==MotionEvent.ACTION_MOVE&&drag&&selected!=null&&mode!=Mode.SELECT){applyGesture(selected,x-lastX,y-lastY);lastX=x;lastY=y;return true;}
       return true;
     }
