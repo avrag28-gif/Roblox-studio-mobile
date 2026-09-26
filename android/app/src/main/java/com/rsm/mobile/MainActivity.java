@@ -37,7 +37,7 @@ public class MainActivity extends Activity {
   TextView status,output;
   EditText scriptEditor;
   final String PREF="rsm_project_v3";
-  final String PROJECT_FILE="rsm-project-v3.json";
+  final String PROJECT_FILE="rsm-project-v3.json"; final String RECOVERY_FILE="rsm-project-v3.recovery.json";
 
   int dp(float v){return (int)(v*getResources().getDisplayMetrics().density+.5f);}
   TextView text(String s,float size){
@@ -161,7 +161,8 @@ public class MainActivity extends Activity {
     Runnable r;TextWatcherCommit(Runnable x){r=x;}public void beforeTextChanged(CharSequence s,int a,int c,int d){}public void onTextChanged(CharSequence s,int a,int b,int c){ }public void afterTextChanged(android.text.Editable e){r.run();}
   }
 
-  void changed(){dirty=true;refreshExplorer();viewport.invalidate();status.setText("●  "+(playing?"PLAY":"EDIT")+"   •   "+objects.size()+" objects   •   Unsaved");}
+  void writeRecovery(){try{JSONArray a=new JSONArray();for(Obj o:objects){JSONObject j=new JSONObject();j.put("id",o.id);j.put("name",o.name);j.put("type",o.type);j.put("parent",o.parent);j.put("x",o.x);j.put("y",o.y);j.put("z",o.z);j.put("sx",o.sx);j.put("sy",o.sy);j.put("sz",o.sz);j.put("rx",o.rx);j.put("ry",o.ry);j.put("rz",o.rz);j.put("color",o.color);j.put("anchored",o.anchored);j.put("collide",o.collide);a.put(j);}try(java.io.FileOutputStream out=new java.io.FileOutputStream(new java.io.File(getFilesDir(),RECOVERY_FILE))){out.write(a.toString().getBytes("UTF-8"));out.flush();}}catch(Exception ignored){}}
+  void changed(){dirty=true;writeRecovery();refreshExplorer();viewport.invalidate();status.setText("●  "+(playing?"PLAY":"EDIT")+"   •   "+objects.size()+" objects   •   Unsaved");}
   void chooseParent(){
     if(selected==null)return;
     ArrayList<String> names=new ArrayList<>();ArrayList<Obj> choices=new ArrayList<>();
@@ -206,7 +207,7 @@ public class MainActivity extends Activity {
   void saveProject(){
     try{
       JSONArray a=new JSONArray();for(Obj o:objects){JSONObject j=new JSONObject();j.put("id",o.id);j.put("name",o.name);j.put("type",o.type);j.put("parent",o.parent);j.put("x",o.x);j.put("y",o.y);j.put("z",o.z);j.put("sx",o.sx);j.put("sy",o.sy);j.put("sz",o.sz);j.put("rx",o.rx);j.put("ry",o.ry);j.put("rz",o.rz);j.put("color",o.color);j.put("anchored",o.anchored);j.put("collide",o.collide);a.put(j);}
-      String payload=a.toString();java.io.File dst=new java.io.File(getFilesDir(),PROJECT_FILE),bak=new java.io.File(getFilesDir(),PROJECT_FILE+".bak"),tmp=new java.io.File(getFilesDir(),PROJECT_FILE+".tmp");if(dst.exists())try(java.io.FileInputStream in=new java.io.FileInputStream(dst);java.io.FileOutputStream out=new java.io.FileOutputStream(bak)){byte[] buf=new byte[8192];int n;while((n=in.read(buf))>0)out.write(buf,0,n);}try(java.io.FileOutputStream out=new java.io.FileOutputStream(tmp)){out.write(payload.getBytes("UTF-8"));out.flush();}if(!tmp.renameTo(dst))throw new java.io.IOException("atomic project replace failed");getSharedPreferences(PREF,0).edit().putInt("version",3).putString("scene",payload).putLong("savedAt",System.currentTimeMillis()).apply();dirty=false;refresh();append("INFO","Project saved (version 3).");
+      String payload=a.toString();java.io.File dst=new java.io.File(getFilesDir(),PROJECT_FILE),bak=new java.io.File(getFilesDir(),PROJECT_FILE+".bak"),tmp=new java.io.File(getFilesDir(),PROJECT_FILE+".tmp");if(dst.exists())try(java.io.FileInputStream in=new java.io.FileInputStream(dst);java.io.FileOutputStream out=new java.io.FileOutputStream(bak)){byte[] buf=new byte[8192];int n;while((n=in.read(buf))>0)out.write(buf,0,n);}try(java.io.FileOutputStream out=new java.io.FileOutputStream(tmp)){out.write(payload.getBytes("UTF-8"));out.flush();}if(!tmp.renameTo(dst))throw new java.io.IOException("atomic project replace failed");getSharedPreferences(PREF,0).edit().putInt("version",3).putString("scene",payload).putLong("savedAt",System.currentTimeMillis()).apply();dirty=false;new java.io.File(getFilesDir(),RECOVERY_FILE).delete();refresh();append("INFO","Project saved (version 3).");
     }catch(Exception e){append("ERROR",e.toString());}
   }
   @Override protected void onResume(){super.onResume();nativeLifecycle(1);}
@@ -214,7 +215,7 @@ public class MainActivity extends Activity {
   @Override protected void onDestroy(){nativeSurfaceDestroyed();nativeLifecycle(0);super.onDestroy();}
 
   void loadProject(){
-    String s=null; try{java.io.File dst=new java.io.File(getFilesDir(),PROJECT_FILE);if(dst.exists())s=new String(java.nio.file.Files.readAllBytes(dst.toPath()),"UTF-8"); else {java.io.File bak=new java.io.File(getFilesDir(),PROJECT_FILE+".bak");if(bak.exists())s=new String(java.nio.file.Files.readAllBytes(bak.toPath()),"UTF-8");}}catch(Exception ignored){} if(s==null)s=getSharedPreferences(PREF,0).getString("scene",null); if(s==null){Toast.makeText(this,"No saved project",Toast.LENGTH_SHORT).show();return;}
+    String s=null; try{java.io.File dst=new java.io.File(getFilesDir(),PROJECT_FILE);if(dst.exists())s=new String(java.nio.file.Files.readAllBytes(dst.toPath()),"UTF-8"); else {java.io.File bak=new java.io.File(getFilesDir(),PROJECT_FILE+".bak");if(bak.exists())s=new String(java.nio.file.Files.readAllBytes(bak.toPath()),"UTF-8");}}catch(Exception ignored){} if(s==null){java.io.File rec=new java.io.File(getFilesDir(),RECOVERY_FILE);if(rec.exists()){try{s=new String(java.nio.file.Files.readAllBytes(rec.toPath()),"UTF-8");append("WARNING","Recovered unsaved project state.");}catch(Exception ignored){}}} if(s==null)s=getSharedPreferences(PREF,0).getString("scene",null); if(s==null){Toast.makeText(this,"No saved project",Toast.LENGTH_SHORT).show();return;}
     try{JSONArray a=new JSONArray(s);objects.clear();for(int i=0;i<a.length();i++){JSONObject j=a.getJSONObject(i);Obj o=new Obj(j.getString("name"));o.id=j.optString("id",o.id);o.type=j.optString("type","Part");o.parent=j.optString("parent","Workspace");o.x=(float)j.optDouble("x");o.y=(float)j.optDouble("y");o.z=(float)j.optDouble("z");o.sx=(float)j.optDouble("sx",2);o.sy=(float)j.optDouble("sy",2);o.sz=(float)j.optDouble("sz",2);o.rx=(float)j.optDouble("rx");o.ry=(float)j.optDouble("ry");o.rz=(float)j.optDouble("rz");o.color=j.optInt("color",Color.rgb(90,160,240));o.anchored=j.optBoolean("anchored",true);o.collide=j.optBoolean("collide",true);objects.add(o);}selected=null;dirty=false;refresh();append("INFO","Project loaded.");}catch(Exception e){append("ERROR","Load failed: "+e.getMessage());}
   }
 
