@@ -15,6 +15,10 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10'
       - name: Locate Android SDK tools
         run: |
           SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -n 1)"
@@ -39,10 +43,10 @@ jobs:
           ctest --test-dir build --output-on-failure
       - name: Android debug build
         working-directory: android
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
+        run: gradle assembleDebug --no-daemon --stacktrace
       - name: Android release build
         working-directory: android
-        run: ./gradlew assembleRelease bundleRelease --no-daemon --stacktrace
+        run: gradle assembleRelease bundleRelease --no-daemon --stacktrace
       - name: Upload Android artifacts
         uses: actions/upload-artifact@v4
         with:
