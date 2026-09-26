@@ -1,0 +1,5 @@
+#pragma once
+#include <algorithm>
+#include <string>
+#include <vector>
+namespace rsm { struct DiagnosticMarker{int line=1,column=1;std::string message;}; class ScriptEditorModel{std::string source_;std::vector<DiagnosticMarker>errors_;size_t cursor_=0;public:void SetSource(std::string s){source_=std::move(s);cursor_=std::min(cursor_,source_.size());}const std::string&Source()const{return source_;}void SetCursor(size_t p){cursor_=std::min(p,source_.size());}size_t Cursor()const{return cursor_;}void AddDiagnostic(int l,int c,std::string m){errors_.push_back({l,c,std::move(m)});}void ClearDiagnostics(){errors_.clear();}const std::vector<DiagnosticMarker>&Diagnostics()const{return errors_;}std::vector<std::string>Complete(const std::string&prefix)const{static const char*words[]={"game","GetService","Workspace","Instance","new","Name","Parent","Position","CFrame","Size","Color","Anchored","CanCollide","print","local","function","return","if","then","end"};std::vector<std::string>r;for(auto*w:words)if(std::string(w).rfind(prefix,0)==0)r.push_back(w);return r;}};}
