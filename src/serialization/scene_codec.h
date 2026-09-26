@@ -7,7 +7,7 @@
 namespace rsm {
 class SceneCodec {
  static std::string Hex(const std::string&s){static const char*h="0123456789ABCDEF";std::string o;for(unsigned char c:s){o+=h[c>>4];o+=h[c&15];}return o;}
- static std::string Unhex(const std::string&s){std::string o;for(size_t i=0;i+1<s.size();i+=2){auto n=[](char c){return c>='0'&&c<='9'?c-'0':c>='A'&&c<='F'?c-'0'+10:c-'A'+10;};o.push_back(char((n(s[i])<<4)|n(s[i+1])));}return o;}
+ static std::string Unhex(const std::string&s){std::string o;for(size_t i=0;i+1<s.size();i+=2){auto n=[](char c){return c>='0'&&c<='9'?c-'0':c>='A'&&c<='F'?c-'A'+10:c-'A'+10;};o.push_back(char((n(s[i])<<4)|n(s[i+1])));}return o;}
  static void Write(const Instance&i,std::ostream&o,int depth){
   o<<depth<<'|'<<Hex(i.ClassName())<<'|'<<Hex(i.Name());
   if(auto*p=dynamic_cast<const BasePart*>(&i)){
