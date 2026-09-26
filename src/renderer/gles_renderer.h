@@ -59,8 +59,8 @@ private:
   float view[16]={rx,ux,-dx,0,ry,uy,-dy,0,rz,uz,-dz,0,-(rx*camera_.position.x+ry*camera_.position.y+rz*camera_.position.z),-(ux*camera_.position.x+uy*camera_.position.y+uz*camera_.position.z),dx*camera_.position.x+dy*camera_.position.y+dz*camera_.position.z,1};
   float aspect=h_?float(w_)/h_:1;float f=1/std::tan(camera_.fov*3.14159265f/360.f),n=camera_.nearPlane,farv=camera_.farPlane;
   float proj[16]={f/aspect,0,0,0,0,f,0,0,0,0,(farv+n)/(n-farv),-1,0,0,(2*farv*n)/(n-farv),0};float vp[16];mul(proj,view,vp);
-  auto pos=p.Position();auto r=p.CFrameValue().rotation;float cx=std::cos(r.x),sx=std::sin(r.x),cy=std::cos(r.y),sy=std::sin(r.y),cz=std::cos(r.z),sz=std::sin(r.z);
-  float tr[16]={cy*cz,cy*sz,-sy,0,sx*sy*cz-cx*sz,sx*sy*sz+cx*cz,sx*cy,0,cx*sy*cz+sx*sz,cx*sy*sz-sx*cz,cx*cy,0,pos.x,pos.y,pos.z,1};
+  auto pos=p.Position();auto q=p.CFrameValue().rotation.Normalized();float xx=q.x*q.x,yy=q.y*q.y,zz=q.z*q.z,xy=q.x*q.y,xz=q.x*q.z,yz=q.y*q.z,wx=q.w*q.x,wy=q.w*q.y,wz=q.w*q.z;
+  float tr[16]={1-2*(yy+zz),2*(xy+wz),2*(xz-wy),0,2*(xy-wz),1-2*(xx+zz),2*(yz+wx),0,2*(xz+wy),2*(yz-wx),1-2*(xx+yy),0,pos.x,pos.y,pos.z,1};
   float m[16];mul(vp,tr,m);out[0]=m[0]*p.Size().x;out[1]=m[1]*p.Size().x;out[2]=m[2]*p.Size().x;out[3]=m[3]*p.Size().x;
   out[4]=m[4]*p.Size().y;out[5]=m[5]*p.Size().y;out[6]=m[6]*p.Size().y;out[7]=m[7]*p.Size().y;
   out[8]=m[8]*p.Size().z;out[9]=m[9]*p.Size().z;out[10]=m[10]*p.Size().z;out[11]=m[11]*p.Size().z;out[12]=m[12];out[13]=m[13];out[14]=m[14];out[15]=m[15];
