@@ -24,7 +24,7 @@ class LuauService{
 #ifdef RSM_LUAU_ENABLED
     lua_State* L=luaL_newstate();if(!L){diagnostics_.push_back({1,"failed to create Luau VM"});return false;}
     luaL_sandbox(L);luaL_sandboxthread(L);luaL_openlibs(L);
-    lua_pushlightuserdata(L,game_);lua_setglobal(L,"__rsm_game"); lua_newtable(L); lua_pushcclosure(L,&GetServiceThunk,0); lua_setfield(L,-2,"GetService"); lua_setglobal(L,"game"); lua_newtable(L); lua_pushcclosure(L,&InstanceNewThunk,0); lua_setfield(L,-2,"new"); lua_setglobal(L,"Instance");
+    lua_pushlightuserdata(L,game_);lua_setglobal(L,"__rsm_game"); lua_newtable(L); lua_pushcfunction(L,&GetServiceThunk,"GetService"); lua_setfield(L,-2,"GetService"); lua_setglobal(L,"game"); lua_newtable(L); lua_pushcfunction(L,&InstanceNewThunk,"Instance.new"); lua_setfield(L,-2,"new"); lua_setglobal(L,"Instance");
     size_t bytecodeSize=0;char* bytecode=luau_compile(source.data(),source.size(),nullptr,&bytecodeSize);
     if(!bytecode){diagnostics_.push_back({1,"Luau compiler returned no bytecode"});lua_close(L);return false;}
     int load=luau_load(L,"=RSM",bytecode,bytecodeSize,0);free(bytecode);
