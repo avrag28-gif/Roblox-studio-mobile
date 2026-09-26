@@ -1,6 +1,7 @@
 #pragma once
 #include "../core/base_part.h"
 #include "../math/aabb.h"
+#include "../math/geometry.h"
 #include <vector>
 #include <algorithm>
 namespace rsm {
