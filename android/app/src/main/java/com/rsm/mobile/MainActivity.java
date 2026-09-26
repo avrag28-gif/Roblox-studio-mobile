@@ -104,7 +104,10 @@ public class MainActivity extends Activity {
   static native void nativeSurfaceCreated();
   static native void nativeSurfaceChanged(int w,int h);
   static native void nativeSurfaceDraw();
-  static native void nativeSyncScene(float[] data);\n  static native void nativeCameraOrbit(float yaw,float pitch);\n  static native void nativeCameraZoom(float delta);\n  static native boolean nativeRunScript(String source);
+  static native void nativeSyncScene(float[] data);
+  static native void nativeCameraOrbit(float yaw,float pitch);
+  static native void nativeCameraZoom(float delta);
+  static native boolean nativeRunScript(String source);
   void refreshExplorer(){
     explorer.removeAllViews();
     TextView h=text("EXPLORER",13);h.setTypeface(Typeface.DEFAULT,Typeface.BOLD);explorer.addView(h,new LinearLayout.LayoutParams(-1,dp(46)));
@@ -162,14 +165,37 @@ public class MainActivity extends Activity {
     if(tab.equals("SCRIPT"))showScript(); else if(tab.equals("ASSETS"))showAssets(); else if(tab.equals("DEBUG"))showDebug(); else {bottom.addView(output,new LinearLayout.LayoutParams(-1,0,1));}
   }
   void showScript(){
-    scriptEditor=new ScriptEditorView(this);scriptEditor.setText("-- RSM Luau Script\nlocal Workspace = game:GetService(\"Workspace\")\n\nlocal part = Instance.new(\"Part\")\npart.Name = \"RuntimePart\"\npart.Parent = Workspace\n");scriptEditor.setTextColor(Color.WHITE);scriptEditor.setTextSize(13);scriptEditor.setGravity(Gravity.TOP);scriptEditor.setPadding(dp(12),dp(8),dp(12),dp(8));scriptEditor.setBackgroundColor(Color.rgb(16,18,22));bottom.addView(scriptEditor,new LinearLayout.LayoutParams(-1,0,1));
+    scriptEditor=new ScriptEditorView(this);scriptEditor.setText("-- RSM Luau Script
+local Workspace = game:GetService(\"Workspace\")
+
+local part = Instance.new(\"Part\")
+part.Name = \"RuntimePart\"
+part.Parent = Workspace
+");scriptEditor.setTextColor(Color.WHITE);scriptEditor.setTextSize(13);scriptEditor.setGravity(Gravity.TOP);scriptEditor.setPadding(dp(12),dp(8),dp(12),dp(8));scriptEditor.setBackgroundColor(Color.rgb(16,18,22));bottom.addView(scriptEditor,new LinearLayout.LayoutParams(-1,0,1));
     Button run=btn("▶  Run Script");run.setOnClickListener(v->{String src=scriptEditor.getText().toString();if(src.trim().isEmpty()){append("ERROR","Script is empty.");return;}boolean ok=nativeRunScript(src);append(ok?"INFO":"ERROR",ok?"Luau script executed in runtime.":"Luau script failed sandbox/compile checks.");Toast.makeText(this,ok?"Script executed":"Script failed",Toast.LENGTH_SHORT).show();refresh();});bottom.addView(run,new LinearLayout.LayoutParams(-1,dp(42)));
   }
-  void showAssets(){LinearLayout p=new LinearLayout(this);p.setOrientation(LinearLayout.VERTICAL);p.addView(text("ASSET BROWSER",13));p.addView(text("▣  Built-in Materials\n▣  Meshes   (OBJ / GLB pipeline)\n▣  Textures\n▣  Sounds\n▣  Animations\n\nImport validates → processes → caches assets.",12));bottom.addView(p,new LinearLayout.LayoutParams(-1,0,1));}
-  void showDebug(){bottom.addView(text("CPU  —  ready\nGPU  —  renderer backend: Android surface\nScene objects  —  "+objects.size()+"\nPhysics bodies  —  "+objects.size()+"\nScripts  —  sandbox\nMemory  —  runtime monitored",12),new LinearLayout.LayoutParams(-1,0,1));}
-  void append(String level,String msg){if(output==null)output=text("",12);output.append("["+level+"] "+msg+"\n");}
+  void showAssets(){LinearLayout p=new LinearLayout(this);p.setOrientation(LinearLayout.VERTICAL);p.addView(text("ASSET BROWSER",13));p.addView(text("▣  Built-in Materials
+▣  Meshes   (OBJ / GLB pipeline)
+▣  Textures
+▣  Sounds
+▣  Animations
+
+Import validates → processes → caches assets.",12));bottom.addView(p,new LinearLayout.LayoutParams(-1,0,1));}
+  void showDebug(){bottom.addView(text("CPU  —  ready
+GPU  —  renderer backend: Android surface
+Scene objects  —  "+objects.size()+"
+Physics bodies  —  "+objects.size()+"
+Scripts  —  sandbox
+Memory  —  runtime monitored",12),new LinearLayout.LayoutParams(-1,0,1));}
+  void append(String level,String msg){if(output==null)output=text("",12);output.append("["+level+"] "+msg+"
+");}
   void showTools(){bottom("OUTPUT");new AlertDialog.Builder(this).setTitle("Studio Tools").setItems(new String[]{"Move","Rotate","Scale","Output","Script","Assets","Debug","Project Settings"},(d,w)->{if(w==0)mode=Mode.MOVE;else if(w==1)mode=Mode.ROTATE;else if(w==2)mode=Mode.SCALE;else if(w==3)bottom("OUTPUT");else if(w==4)bottom("SCRIPT");else if(w==5)bottom("ASSETS");else if(w==6)bottom("DEBUG");else settings();}).show();}
-  void settings(){new AlertDialog.Builder(this).setTitle("Project Settings").setMessage("RSM Studio\nRenderer: Vulkan / OpenGL ES fallback\nTarget: Android ARM64\nProject format: RSM-3\nAutosave: enabled\nSandbox: restricted").setPositiveButton("OK",null).show();}
+  void settings(){new AlertDialog.Builder(this).setTitle("Project Settings").setMessage("RSM Studio
+Renderer: Vulkan / OpenGL ES fallback
+Target: Android ARM64
+Project format: RSM-3
+Autosave: enabled
+Sandbox: restricted").setPositiveButton("OK",null).show();}
 
   void saveProject(){
     try{
@@ -186,7 +212,8 @@ public class MainActivity extends Activity {
 
   class Viewport extends View{
     Paint p=new Paint(3);float lastX,lastY;boolean drag;
-    float lastSpan,lastAngle;\n    Viewport(Context c){super(c);setFocusable(true);setBackgroundColor(Color.TRANSPARENT);setZ(2);}
+    float lastSpan,lastAngle;
+    Viewport(Context c){super(c);setFocusable(true);setBackgroundColor(Color.TRANSPARENT);setZ(2);}
     protected void onDraw(Canvas c){
       super.onDraw(c);float w=getWidth(),h=getHeight();p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(1);p.setColor(Color.rgb(43,47,55));
       float grid=dp(32);for(float x=w/2;x<w;x+=grid)c.drawLine(x,0,x,h,p);for(float x=w/2;x>0;x-=grid)c.drawLine(x,0,x,h,p);for(float y=h/2;y<h;y+=grid)c.drawLine(0,y,w,y,p);for(float y=h/2;y>0;y-=grid)c.drawLine(0,y,w,y,p);
