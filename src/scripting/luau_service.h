@@ -15,6 +15,7 @@ extern "C" {
 #endif
 namespace rsm {
 struct ScriptDiagnostic { int line=1; std::string message; };
+struct ScriptLimitsConfig { std::size_t maxSourceBytes=512*1024; int maxInstructions=200000; };
 class LuauService {
 public:
  using Log=std::function<void(std::string)>;
@@ -24,11 +25,13 @@ public:
  bool CompileAndRun(const std::string& source){
   diagnostics_.clear();
   std::string sandboxError;
-  if(source.size()>sandbox_.MaxSourceBytes()){diagnostics_.push_back({1,"script exceeds sandbox source limit"});return false;}
+  if(source.size()>limits_.maxSourceBytes){diagnostics_.push_back({1,"script exceeds sandbox source limit"});return false;}
+  sandbox_.SetMaxSourceBytes(limits_.maxSourceBytes);
   if(!sandbox_.ValidateSource(source,sandboxError)){diagnostics_.push_back({1,sandboxError});return false;}
 #ifdef RSM_LUAU_ENABLED
   lua_State* L=luaL_newstate(); if(!L){diagnostics_.push_back({1,"failed to create Luau VM"});return false;}
   luaL_sandbox(L); luaL_sandboxthread(L); luaL_openlibs(L);
+  lua_sethook(L,&InstructionHook,LUA_MASKCOUNT,10000);
   lua_pushlightuserdata(L,game_); lua_setglobal(L,"__rsm_game");
   lua_newtable(L); lua_pushcfunction(L,&GetServiceThunk,"GetService"); lua_setfield(L,-2,"GetService"); lua_setglobal(L,"game");
   lua_newtable(L); lua_pushcfunction(L,&InstanceNewThunk,"Instance.new"); lua_setfield(L,-2,"new"); lua_setglobal(L,"Instance");
@@ -72,9 +75,11 @@ public:
 #endif
  }
  const std::vector<ScriptDiagnostic>& Diagnostics()const{return diagnostics_;}
- ScriptSandbox& Sandbox(){return sandbox_;}
+ScriptSandbox& Sandbox(){return sandbox_;}
+ void SetLimits(ScriptLimitsConfig l){limits_=l;} const ScriptLimitsConfig&Limits()const{return limits_;}
 private:
 #ifdef RSM_LUAU_ENABLED
+ static void InstructionHook(lua_State*L,lua_Debug*){luaL_error(L,"script instruction limit exceeded");}
  static std::string ErrorText(lua_State*L){const char*s=lua_tostring(L,-1);return s?s:"Luau error";}
  static int GetServiceThunk(lua_State*L){
   lua_getglobal(L,"__rsm_game"); auto*dm=static_cast<DataModel*>(lua_touserdata(L,-1)); lua_pop(L,1);
@@ -89,6 +94,6 @@ private:
   lua_pushlightuserdata(L,i); return 1;
  }
 #endif
- Log log_; std::vector<ScriptDiagnostic> diagnostics_; ScriptSandbox sandbox_; DataModel*game_=nullptr;
+ Log log_; std::vector<ScriptDiagnostic> diagnostics_; ScriptSandbox sandbox_; DataModel*game_=nullptr; ScriptLimitsConfig limits_{};
 };
 }
