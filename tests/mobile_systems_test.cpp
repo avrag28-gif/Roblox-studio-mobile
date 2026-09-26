@@ -3,6 +3,7 @@
 #include "editor/gizmo_controller.h"
 #include "editor/selection_service.h"
 #include "network/ownership.h"
+#include "runtime/network_runtime.h"
 #include "performance/resource_budget.h"
 #include "platform/android_lifecycle.h"
 #include "project/project_manifest.h"
