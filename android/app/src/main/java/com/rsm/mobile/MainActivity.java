@@ -32,6 +32,7 @@ public class MainActivity extends Activity {
   TextView status,output;
   EditText scriptEditor;
   final String PREF="rsm_project_v3";
+  final String PROJECT_FILE="rsm-project-v3.json";
 
   int dp(float v){return (int)(v*getResources().getDisplayMetrics().density+.5f);}
   TextView text(String s,float size){
@@ -171,7 +172,7 @@ public class MainActivity extends Activity {
   @Override protected void onPause(){super.onPause();if(dirty)saveProject();}
 
   void loadProject(){
-    String s=getSharedPreferences(PREF,0).getString("scene",null);if(s==null){Toast.makeText(this,"No saved project",Toast.LENGTH_SHORT).show();return;}
+    String s=null; try{java.io.File dst=new java.io.File(getFilesDir(),PROJECT_FILE);if(dst.exists())s=new String(java.nio.file.Files.readAllBytes(dst.toPath()),"UTF-8"); else {java.io.File bak=new java.io.File(getFilesDir(),PROJECT_FILE+".bak");if(bak.exists())s=new String(java.nio.file.Files.readAllBytes(bak.toPath()),"UTF-8");}}catch(Exception ignored){} if(s==null)s=getSharedPreferences(PREF,0).getString("scene",null); if(s==null){Toast.makeText(this,"No saved project",Toast.LENGTH_SHORT).show();return;}
     try{JSONArray a=new JSONArray(s);objects.clear();for(int i=0;i<a.length();i++){JSONObject j=a.getJSONObject(i);Obj o=new Obj(j.getString("name"));o.id=j.optString("id",o.id);o.type=j.optString("type","Part");o.x=(float)j.optDouble("x");o.y=(float)j.optDouble("y");o.z=(float)j.optDouble("z");o.sx=(float)j.optDouble("sx",2);o.sy=(float)j.optDouble("sy",2);o.sz=(float)j.optDouble("sz",2);o.rx=(float)j.optDouble("rx");o.ry=(float)j.optDouble("ry");o.rz=(float)j.optDouble("rz");o.color=j.optInt("color",Color.rgb(90,160,240));o.anchored=j.optBoolean("anchored",true);o.collide=j.optBoolean("collide",true);objects.add(o);}selected=null;dirty=false;refresh();append("INFO","Project loaded.");}catch(Exception e){append("ERROR","Load failed: "+e.getMessage());}
   }
 
