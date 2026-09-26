@@ -11,6 +11,7 @@ import android.widget.*;
 import android.opengl.GLSurfaceView;
 import java.util.*;
 import org.json.*;
+import java.io.IOException;
 
 public class MainActivity extends Activity {
   static { try { System.loadLibrary("rsm_android"); } catch (Throwable ignored) {} }
@@ -35,7 +36,7 @@ public class MainActivity extends Activity {
   Mode mode=Mode.SELECT;
   boolean playing=false,dirty=false;
   TextView status,output;
-  EditText scriptEditor;
+  EditText scriptEditor; AndroidAudioPlayer audioPlayer;
   final String PREF="rsm_project_v3";
   final String PROJECT_FILE="rsm-project-v3.json"; final String RECOVERY_FILE="rsm-project-v3.recovery.json";
 
