@@ -10,6 +10,8 @@
 #include "runtime/script_scheduler.h"
 #include "security/project_validator.h"
 #include "serialization/scene_codec.h"
+#include "gui/property_panel.h"
+#include "gui/script_editor_model.h"
 #include <cassert>
 #include <iostream>
 using namespace rsm;
@@ -21,7 +23,7 @@ int main(){
  AndroidLifecycle l;l.Start();l.SurfaceCreated();l.Pause();assert(l.State()==AppState::Paused&&l.HasSurface());l.Resume();assert(l.State()==AppState::Started);
  ProjectManifest pm;pm.name="Demo";auto enc=ProjectManifestCodec::Encode(pm);ProjectManifest pm2;assert(ProjectManifestCodec::Decode(enc,pm2)&&pm2.name=="Demo");
  ScriptScheduler s;int ran=0;s.Enqueue([&]{++ran;});s.Step();assert(ran==1);
- assert(ProjectValidator::SafeRelativePath("assets/a.mesh"));assert(!ProjectValidator::SafeRelativePath("../secret"));DataModel dm;auto part=InstanceFactory::New("Part");part->SetName("SerializedPart");Instance::SetParent(std::move(part),dm.GetService("Workspace"));assert(SceneCodec::Valid(SceneCodec::Save(dm)));
+ assert(ProjectValidator::SafeRelativePath("assets/a.mesh"));assert(!ProjectValidator::SafeRelativePath("../secret"));DataModel dm;auto part=InstanceFactory::New("Part");part->SetName("SerializedPart");Instance::SetParent(std::move(part),dm.GetService("Workspace"));assert(SceneCodec::Valid(SceneCodec::Save(dm)));assert(!PropertyPanel::Describe(*dm.GetService("Workspace")).empty());ScriptEditorModel editor;editor.SetSource("local p = Instance.new(\"Part\")");assert(!editor.Complete("Ins").empty());
  AudioWorld aw;auto id=aw.Create({0,0,0});aw.Play(id);assert(aw.Gain(id,{0,0,0})>0);
  std::cout<<"mobile systems ok\n";return 0;
 }
