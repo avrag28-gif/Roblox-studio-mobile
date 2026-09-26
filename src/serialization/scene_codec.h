@@ -28,13 +28,13 @@ public:
    int depth=0;try{depth=std::stoi(f[0]);}catch(...){error="invalid scene depth";return nullptr;}
    if(depth<0||depth>int(stack.size())){error="invalid scene hierarchy";return nullptr;}
    auto obj=InstanceFactory::New(Unhex(f[1]));if(!obj){error="unsupported instance";return nullptr;}obj->SetName(Unhex(f[2]));
-   if(auto*p=dynamic_cast<BasePart*>(obj.get());p&&f.size()>=10){
+   if(auto*p=dynamic_cast<BasePart*>(obj.get());p&&f.size()>=9){
     auto parse3=[](const std::string&v,Vector3&out){std::stringstream q(v);char c1,c2;if(!(q>>out.x>>c1>>out.y>>c2>>out.z)||c1!=','||c2!=',')return false;return true;};
     Vector3 pos,size; if(parse3(f[3],pos)&&parse3(f[4],size)){p->SetPosition(pos);p->SetSize(size);}
     std::stringstream col(f[5]);char c1,c2;Color3 color{};if(col>>color.r>>c1>>color.g>>c2>>color.b)p->SetColor(color);
     try{p->SetTransparency(std::stof(f[6]));p->SetAnchored(std::stoi(f[7])!=0);p->SetCanCollide(std::stoi(f[8])!=0);}catch(...){error="invalid part property";return nullptr;}
    }
-   if(auto*script=dynamic_cast<Script*>(obj.get());script&&f.size()>=10)script->SetSource(Unhex(f[9]));
+   if(auto*script=dynamic_cast<Script*>(obj.get());script&&f.size()>=4)script->SetSource(Unhex(f[9]));
    Instance*parent=depth==0?dm.get():stack[depth-1];Instance::SetParent(std::move(obj),parent);
    if(depth<int(stack.size()))stack.resize(depth);stack.push_back(parent->GetChildren().back());
   }
