@@ -31,7 +31,6 @@ public:
 #ifdef RSM_LUAU_ENABLED
   lua_State* L=luaL_newstate(); if(!L){diagnostics_.push_back({1,"failed to create Luau VM"});return false;}
   luaL_sandbox(L); luaL_sandboxthread(L); luaL_openlibs(L);
-  lua_sethook(L,&InstructionHook,LUA_MASKCOUNT,10000);
   lua_pushlightuserdata(L,game_); lua_setglobal(L,"__rsm_game");
   lua_newtable(L); lua_pushcfunction(L,&GetServiceThunk,"GetService"); lua_setfield(L,-2,"GetService"); lua_setglobal(L,"game");
   lua_newtable(L); lua_pushcfunction(L,&InstanceNewThunk,"Instance.new"); lua_setfield(L,-2,"new"); lua_setglobal(L,"Instance");
@@ -79,7 +78,6 @@ ScriptSandbox& Sandbox(){return sandbox_;}
  void SetLimits(ScriptLimitsConfig l){limits_=l;} const ScriptLimitsConfig&Limits()const{return limits_;}
 private:
 #ifdef RSM_LUAU_ENABLED
- static void InstructionHook(lua_State*L,lua_Debug*){luaL_error(L,"script instruction limit exceeded");}
  static std::string ErrorText(lua_State*L){const char*s=lua_tostring(L,-1);return s?s:"Luau error";}
  static int GetServiceThunk(lua_State*L){
   lua_getglobal(L,"__rsm_game"); auto*dm=static_cast<DataModel*>(lua_touserdata(L,-1)); lua_pop(L,1);
