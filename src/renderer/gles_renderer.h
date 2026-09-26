@@ -35,7 +35,7 @@ public:
   (void)root;
 #endif
  }
- const char* Backend() const override { return "OpenGL ES 3"; }\n void SetCamera(const Camera& c) override { camera_=c; }
+ const char* Backend() const override { return "OpenGL ES 3"; }\n void SetCamera(const Camera& c) override { camera_=c; } void Shutdown() override { glDeleteBuffers(1,&vbo_); glDeleteVertexArrays(1,&vao_); glDeleteProgram(program_); if(vs_)glDeleteShader(vs_); if(fs_)glDeleteShader(fs_); vao_=vbo_=program_=vs_=fs_=0; }
  std::size_t VisibleCount() const { return visible_; }
 private:
 #ifdef __ANDROID__
