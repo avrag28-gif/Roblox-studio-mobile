@@ -1,4 +1,7 @@
 name: Android CI
+concurrency:
+  group: rsm-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 on:
   push:
     branches: [main]
