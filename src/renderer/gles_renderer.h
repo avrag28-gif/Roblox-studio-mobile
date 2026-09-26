@@ -51,7 +51,7 @@ private:
  int w_=0,h_=0; std::size_t visible_=0; Camera camera_{};
  static GLuint compile(GLenum type,const char* src){GLuint s=glCreateShader(type);glShaderSource(s,1,&src,nullptr);glCompileShader(s);GLint ok=0;glGetShaderiv(s,GL_COMPILE_STATUS,&ok);if(!ok){glDeleteShader(s);return 0;}return s;}
  static void mul(const float*a,const float*b,float*out){for(int c=0;c<4;c++)for(int r=0;r<4;r++){out[c*4+r]=0;for(int k=0;k<4;k++)out[c*4+r]+=a[k*4+r]*b[c*4+k];}}
- void buildMvp(Vector3 pos,float*out) const {
+ void buildMvp(const BasePart&p,float*out) const {
   float dx=camera_.target.x-camera_.position.x,dy=camera_.target.y-camera_.position.y,dz=camera_.target.z-camera_.position.z;
   float fl=std::sqrt(dx*dx+dy*dy+dz*dz);if(fl<1e-5f)fl=1;dx/=fl;dy/=fl;dz/=fl;
   float rx=dz,ry=0,rz=-dx;float rl=std::sqrt(rx*rx+rz*rz);if(rl<1e-5f)rl=1;rx/=rl;rz/=rl;
@@ -59,7 +59,11 @@ private:
   float view[16]={rx,ux,-dx,0,ry,uy,-dy,0,rz,uz,-dz,0,-(rx*camera_.position.x+ry*camera_.position.y+rz*camera_.position.z),-(ux*camera_.position.x+uy*camera_.position.y+uz*camera_.position.z),dx*camera_.position.x+dy*camera_.position.y+dz*camera_.position.z,1};
   float aspect=h_?float(w_)/h_:1;float f=1/std::tan(camera_.fov*3.14159265f/360.f),n=camera_.nearPlane,farv=camera_.farPlane;
   float proj[16]={f/aspect,0,0,0,0,f,0,0,0,0,(farv+n)/(n-farv),-1,0,0,(2*farv*n)/(n-farv),0};float vp[16];mul(proj,view,vp);
-  float tr[16]={1,0,0,0,0,1,0,0,0,0,1,0,-pos.x,-pos.y,-pos.z,1};mul(vp,tr,out);
+  auto pos=p.Position();auto r=p.CFrameValue().rotation;float cx=std::cos(r.x),sx=std::sin(r.x),cy=std::cos(r.y),sy=std::sin(r.y),cz=std::cos(r.z),sz=std::sin(r.z);
+  float tr[16]={cy*cz,cy*sz,-sy,0,sx*sy*cz-cx*sz,sx*sy*sz+cx*cz,sx*cy,0,cx*sy*cz+sx*sz,cx*sy*sz-sx*cz,cx*cy,0,pos.x,pos.y,pos.z,1};
+  float m[16];mul(vp,tr,m);out[0]=m[0]*p.Size().x;out[1]=m[1]*p.Size().x;out[2]=m[2]*p.Size().x;out[3]=m[3]*p.Size().x;
+  out[4]=m[4]*p.Size().y;out[5]=m[5]*p.Size().y;out[6]=m[6]*p.Size().y;out[7]=m[7]*p.Size().y;
+  out[8]=m[8]*p.Size().z;out[9]=m[9]*p.Size().z;out[10]=m[10]*p.Size().z;out[11]=m[11]*p.Size().z;out[12]=m[12];out[13]=m[13];out[14]=m[14];out[15]=m[15];
  }
  void drawPart(const BasePart& p){
   float x=p.Position().x,y=p.Position().y,z=p.Position().z,sx=p.Size().x*.5f,sy=p.Size().y*.5f,sz=p.Size().z*.5f;
@@ -68,7 +72,7 @@ private:
   glBindVertexArray(vao_);glBindBuffer(GL_ARRAY_BUFFER,vbo_);glBufferData(GL_ARRAY_BUFFER,sizeof(v),v,GL_STREAM_DRAW);
   glEnableVertexAttribArray(0);glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,3*sizeof(float),(void*)0);
   GLint loc=glGetUniformLocation(program_,"uColor");glUniform4f(loc,p.Color().r,p.Color().g,p.Color().b,1.f-p.Transparency());
-  float m[16];buildMvp(p.Position(),m);glUniformMatrix4fv(glGetUniformLocation(program_,"uMVP"),1,GL_FALSE,m);
+  float m[16];buildMvp(p,m);glUniformMatrix4fv(glGetUniformLocation(program_,"uMVP"),1,GL_FALSE,m);
   glDrawElements(GL_TRIANGLES,36,GL_UNSIGNED_SHORT,idx);++visible_;
  }
 #endif
