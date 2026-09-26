@@ -196,7 +196,7 @@ public class MainActivity extends Activity {
   }
   @Override protected void onActivityResult(int requestCode,int resultCode,Intent data){
     super.onActivityResult(requestCode,resultCode,data);if(requestCode!=PICK_ASSET||resultCode!=RESULT_OK||data==null||data.getData()==null)return;
-    String uri=data.getData().toString();if(!assetUris.contains(uri)){assetUris.add(uri);getSharedPreferences(PREF,0).edit().putStringSet("assets",new java.util.HashSet<>(assetUris)).apply();append("INFO","Imported asset: "+uri);dirty=true;}bottom("ASSETS");
+    String uri=data.getData().toString();try{int flags=data.getFlags()&(Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_WRITE_URI_PERMISSION);getContentResolver().takePersistableUriPermission(data.getData(),flags);}catch(Exception ignored){}if(!assetUris.contains(uri)){assetUris.add(uri);getSharedPreferences(PREF,0).edit().putStringSet("assets",new java.util.HashSet<>(assetUris)).apply();append("INFO","Imported asset: "+uri);dirty=true;}bottom("ASSETS");
   }
   void showDebug(){bottom.addView(text("CPU  —  ready\\nGPU  —  renderer backend: Android surface\\nScene objects  —  "+objects.size()+"\\nPhysics bodies  —  "+objects.size()+"\\nScripts  —  sandbox\\nMemory  —  runtime monitored",12),new LinearLayout.LayoutParams(-1,0,1));}
   void append(String level,String msg){if(output==null)output=text("",12);output.append("["+level+"] "+msg+"\\n");}
