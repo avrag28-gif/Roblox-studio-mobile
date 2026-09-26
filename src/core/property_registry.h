@@ -21,8 +21,8 @@ public:
   add("Transparency",PropertyType::Number);add("Anchored",PropertyType::Bool);
   add("CanCollide",PropertyType::Bool);add("CanTouch",PropertyType::Bool);
   add("CanQuery",PropertyType::Bool);add("Mass",PropertyType::Number);
-  auto addCommon=[this](const char*n){Register("Instance",PropertyDescriptor{n,PropertyType::String,true,{}});};
-  addCommon("Name"); addCommon("Archivable");
+  Register("Instance",PropertyDescriptor{"Name",PropertyType::String,true,{}});
+  Register("Instance",PropertyDescriptor{"Archivable",PropertyType::Bool,true,{}});
  }
 };
 }
