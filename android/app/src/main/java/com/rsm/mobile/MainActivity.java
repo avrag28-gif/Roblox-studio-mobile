@@ -104,7 +104,7 @@ public class MainActivity extends Activity {
   static native void nativeSurfaceCreated();
   static native void nativeSurfaceChanged(int w,int h);
   static native void nativeSurfaceDraw();
-  static native void nativeSyncScene(float[] data);\n  static native void nativeCameraOrbit(float yaw,float pitch);\n  static native void nativeCameraZoom(float delta);
+  static native void nativeSyncScene(float[] data);\n  static native void nativeCameraOrbit(float yaw,float pitch);\n  static native void nativeCameraZoom(float delta);\n  static native boolean nativeRunScript(String source);
   void refreshExplorer(){
     explorer.removeAllViews();
     TextView h=text("EXPLORER",13);h.setTypeface(Typeface.DEFAULT,Typeface.BOLD);explorer.addView(h,new LinearLayout.LayoutParams(-1,dp(46)));
@@ -163,7 +163,7 @@ public class MainActivity extends Activity {
   }
   void showScript(){
     scriptEditor=new EditText(this);scriptEditor.setText("-- RSM Luau Script\nlocal Workspace = game:GetService(\"Workspace\")\n\nlocal part = Instance.new(\"Part\")\npart.Name = \"RuntimePart\"\npart.Parent = Workspace\n");scriptEditor.setTextColor(Color.WHITE);scriptEditor.setTextSize(13);scriptEditor.setGravity(Gravity.TOP);scriptEditor.setPadding(dp(12),dp(8),dp(12),dp(8));scriptEditor.setBackgroundColor(Color.rgb(16,18,22));bottom.addView(scriptEditor,new LinearLayout.LayoutParams(-1,0,1));
-    Button run=btn("▶  Run Script");run.setOnClickListener(v->{String src=scriptEditor.getText().toString();if(src.trim().isEmpty()){append("ERROR","Script is empty.");return;}append("INFO","Luau source queued for sandbox execution ("+src.length()+" chars).");Toast.makeText(this,"Script queued",Toast.LENGTH_SHORT).show();});bottom.addView(run,new LinearLayout.LayoutParams(-1,dp(42)));
+    Button run=btn("▶  Run Script");run.setOnClickListener(v->{String src=scriptEditor.getText().toString();if(src.trim().isEmpty()){append("ERROR","Script is empty.");return;}boolean ok=nativeRunScript(src);append(ok?"INFO":"ERROR",ok?"Luau script executed in runtime.":"Luau script failed sandbox/compile checks.");Toast.makeText(this,ok?"Script executed":"Script failed",Toast.LENGTH_SHORT).show();refresh();});bottom.addView(run,new LinearLayout.LayoutParams(-1,dp(42)));
   }
   void showAssets(){LinearLayout p=new LinearLayout(this);p.setOrientation(LinearLayout.VERTICAL);p.addView(text("ASSET BROWSER",13));p.addView(text("▣  Built-in Materials\n▣  Meshes   (OBJ / GLB pipeline)\n▣  Textures\n▣  Sounds\n▣  Animations\n\nImport validates → processes → caches assets.",12));bottom.addView(p,new LinearLayout.LayoutParams(-1,0,1));}
   void showDebug(){bottom.addView(text("CPU  —  ready\nGPU  —  renderer backend: Android surface\nScene objects  —  "+objects.size()+"\nPhysics bodies  —  "+objects.size()+"\nScripts  —  sandbox\nMemory  —  runtime monitored",12),new LinearLayout.LayoutParams(-1,0,1));}
