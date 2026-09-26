@@ -38,7 +38,6 @@ public:
   if(!bytecode){diagnostics_.push_back({1,"Luau compiler returned no bytecode"});lua_close(L);return false;}
   int load=luau_load(L,"=RSM",bytecode,bytecodeSize,0); free(bytecode);
   if(load!=0){diagnostics_.push_back({1,ErrorText(L)});lua_close(L);return false;}
-  lua_sethook(L,&InstructionHook,LUA_MASKCOUNT,10000);
   int run=lua_pcall(L,0,0,0);
   if(run!=0){diagnostics_.push_back({1,ErrorText(L)});lua_close(L);return false;}
   if(log_&&source.find("print(")!=std::string::npos)log_("Luau script executed");
@@ -79,7 +78,6 @@ ScriptSandbox& Sandbox(){return sandbox_;}
  void SetLimits(ScriptLimitsConfig l){limits_=l;} const ScriptLimitsConfig&Limits()const{return limits_;}
 private:
 #ifdef RSM_LUAU_ENABLED
- static void InstructionHook(lua_State*L,lua_Debug*){luaL_error(L,"script instruction limit exceeded");}
  static std::string ErrorText(lua_State*L){const char*s=lua_tostring(L,-1);return s?s:"Luau error";}
  static int GetServiceThunk(lua_State*L){
   lua_getglobal(L,"__rsm_game"); auto*dm=static_cast<DataModel*>(lua_touserdata(L,-1)); lua_pop(L,1);
