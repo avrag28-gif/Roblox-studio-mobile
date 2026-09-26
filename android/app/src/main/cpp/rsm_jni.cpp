@@ -38,7 +38,7 @@ extern "C" JNIEXPORT jboolean JNICALL Java_com_rsm_mobile_MainActivity_nativeRun
 extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeSyncScene(JNIEnv* env,jclass,jfloatArray data){
  if(!workspace)return; for(auto* c:workspace->GetChildren()) c->Destroy();
  jsize n=env->GetArrayLength(data); if(n%13)return; std::vector<jfloat> v(n);env->GetFloatArrayRegion(data,0,n,v.data());
- for(int i=0;i<n;i+=13){auto p=rsm::InstanceFactory::New("Part");auto* part=dynamic_cast<rsm::BasePart*>(p.get());if(!part)continue;part->SetPosition({v[i],v[i+1],v[i+2]});part->SetSize({v[i+3],v[i+4],v[i+5]});auto cf=part->CFrameValue();cf.rotation={v[i+6],v[i+7],v[i+8]};part->SetCFrame(cf);part->SetColor({v[i+9],v[i+10],v[i+11]});part->SetAnchored(v[i+12]>0.5f);rsm::Instance::SetParent(std::move(p),workspace);}
+ for(int i=0;i<n;i+=13){auto p=rsm::InstanceFactory::New("Part");auto* part=dynamic_cast<rsm::BasePart*>(p.get());if(!part)continue;part->SetPosition({v[i],v[i+1],v[i+2]});part->SetSize({v[i+3],v[i+4],v[i+5]});auto cf=part->CFrameValue();auto qx=rsm::Quaternion::FromAxisAngle({1,0,0},v[i+6]),qy=rsm::Quaternion::FromAxisAngle({0,1,0},v[i+7]),qz=rsm::Quaternion::FromAxisAngle({0,0,1},v[i+8]);cf.rotation=(qz*qy*qx).Normalized();part->SetCFrame(cf);part->SetColor({v[i+9],v[i+10],v[i+11]});part->SetAnchored(v[i+12]>0.5f);rsm::Instance::SetParent(std::move(p),workspace);}
 }
 
 extern "C" JNIEXPORT jint JNICALL Java_com_rsm_mobile_MainActivity_nativeRaycast(JNIEnv*,jclass,jfloat x,jfloat y,jfloat w,jfloat h){
