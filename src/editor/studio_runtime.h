@@ -45,11 +45,11 @@ public:
  bool DuplicateSelected(){
    auto*i=selection_.Selected();if(!i||!i->Archivable())return false;
    auto c=i->Clone();if(!c)return false;auto*p=i->Parent();if(!p)return false;
-   auto*raw=c.get();raw->SetName(i->Name()+" Copy");p->AddChild(std::move(c));selection_.Select(raw);RebuildRenderWorld();return true;
+   auto*raw=c.get();raw->SetName(i->Name()+" Copy");if(!Instance::SetParent(std::move(c),p))return false;selection_.Select(raw);RebuildRenderWorld();return true;
  }
  bool ReparentSelected(Instance*parent){
    auto*i=selection_.Selected();if(!i||!parent||i==parent)return false;
-   if(i->IsAncestorOf(parent))return false;i->SetParent(parent);RebuildRenderWorld();return i->Parent()==parent;
+   for(auto*a=parent;a;a=a->Parent())if(a==i)return false;i->SetParent(parent);RebuildRenderWorld();return i->Parent()==parent;
  }
  bool SetProperty(const std::string&name,const PropertyValue&value){
    auto*i=selection_.Selected();if(!i)return false;
