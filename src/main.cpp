@@ -5,6 +5,6 @@
 #include <iostream>
 int main(){
  rsm::Engine engine;if(!engine.Initialize()){std::cerr<<"engine initialization failed\n";return 1;}
- rsm::DataModel game;game.InitializeDefaultServices();auto part=rsm::InstanceFactory::New("Part");part->SetName("Part");rsm::Instance::SetParent(std::move(part),game.GetService("Workspace"));
- engine.EditorScene().Game().GetService("Workspace");engine.Tick(1.0f/60.0f);std::cout<<"RSM editor engine ready\n";engine.Shutdown();return 0;
+ auto& game=engine.EditorScene().Game();game.InitializeDefaultServices();auto part=rsm::InstanceFactory::New("Part");part->SetName("Part");rsm::Instance::SetParent(std::move(part),game.GetService("Workspace"));
+ engine.Tick(1.0f/60.0f);std::cout<<"RSM editor engine ready\n";engine.Shutdown();return 0;
 }
