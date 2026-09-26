@@ -13,14 +13,14 @@ public:
  }
  void RegisterBuiltins(){
   if(byClass_.count("Part"))return;
-  auto add=[this](const char*n,PropertyType t){
-   PropertyDescriptor d{n,t,true,{}};Register("BasePart",d);Register("Part",d);Register("MeshPart",d);
+  auto add=[this](const char*n,PropertyType t,PropertyValue def){
+   PropertyDescriptor d{n,t,true,std::move(def)};Register("BasePart",d);Register("Part",d);Register("MeshPart",d);
   };
-  add("Position",PropertyType::Vector3);add("CFrame",PropertyType::CFrame);
-  add("Size",PropertyType::Vector3);add("Color",PropertyType::Color3);
-  add("Transparency",PropertyType::Number);add("Anchored",PropertyType::Bool);
-  add("CanCollide",PropertyType::Bool);add("CanTouch",PropertyType::Bool);
-  add("CanQuery",PropertyType::Bool);add("Mass",PropertyType::Number);
+  add("Position",PropertyType::Vector3,Vector3{});add("CFrame",PropertyType::CFrame,CFrame{});
+  add("Size",PropertyType::Vector3,Vector3{1,1,1});add("Color",PropertyType::Color3,Color3{});
+  add("Transparency",PropertyType::Number,0.0);add("Anchored",PropertyType::Bool,false);
+  add("CanCollide",PropertyType::Bool,true);add("CanTouch",PropertyType::Bool,true);
+  add("CanQuery",PropertyType::Bool,true);add("Mass",PropertyType::Number,1.0);
   Register("Instance",PropertyDescriptor{"Name",PropertyType::String,true,{}});
   Register("Instance",PropertyDescriptor{"Archivable",PropertyType::Bool,true,{}});
  }
