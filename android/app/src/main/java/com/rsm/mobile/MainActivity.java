@@ -104,6 +104,8 @@ public class MainActivity extends Activity {
   static native void nativeSurfaceCreated();
   static native void nativeSurfaceChanged(int w,int h);
   static native void nativeSurfaceDraw();
+  static native void nativeSurfaceDestroyed();
+  static native void nativeLifecycle(int state);
   static native void nativeSyncScene(float[] data);
   static native void nativeCameraOrbit(float yaw,float pitch);
   static native void nativeCameraZoom(float delta);
@@ -194,7 +196,9 @@ public class MainActivity extends Activity {
       String payload=a.toString();java.io.File dst=new java.io.File(getFilesDir(),PROJECT_FILE),bak=new java.io.File(getFilesDir(),PROJECT_FILE+".bak"),tmp=new java.io.File(getFilesDir(),PROJECT_FILE+".tmp");if(dst.exists())try(java.io.FileInputStream in=new java.io.FileInputStream(dst);java.io.FileOutputStream out=new java.io.FileOutputStream(bak)){byte[] buf=new byte[8192];int n;while((n=in.read(buf))>0)out.write(buf,0,n);}try(java.io.FileOutputStream out=new java.io.FileOutputStream(tmp)){out.write(payload.getBytes("UTF-8"));out.flush();}if(!tmp.renameTo(dst))throw new java.io.IOException("atomic project replace failed");getSharedPreferences(PREF,0).edit().putInt("version",3).putString("scene",payload).putLong("savedAt",System.currentTimeMillis()).apply();dirty=false;refresh();append("INFO","Project saved (version 3).");
     }catch(Exception e){append("ERROR",e.toString());}
   }
-  @Override protected void onPause(){super.onPause();if(dirty)saveProject();}
+  @Override protected void onResume(){super.onResume();nativeLifecycle(1);}
+  @Override protected void onPause(){nativeLifecycle(2);super.onPause();if(dirty)saveProject();}
+  @Override protected void onDestroy(){nativeSurfaceDestroyed();nativeLifecycle(0);super.onDestroy();}
 
   void loadProject(){
     String s=null; try{java.io.File dst=new java.io.File(getFilesDir(),PROJECT_FILE);if(dst.exists())s=new String(java.nio.file.Files.readAllBytes(dst.toPath()),"UTF-8"); else {java.io.File bak=new java.io.File(getFilesDir(),PROJECT_FILE+".bak");if(bak.exists())s=new String(java.nio.file.Files.readAllBytes(bak.toPath()),"UTF-8");}}catch(Exception ignored){} if(s==null)s=getSharedPreferences(PREF,0).getString("scene",null); if(s==null){Toast.makeText(this,"No saved project",Toast.LENGTH_SHORT).show();return;}
