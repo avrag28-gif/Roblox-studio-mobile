@@ -1,0 +1,5 @@
+#pragma once
+#include "../core/base_part.h"
+#include <string>
+#include <variant>
+namespace rsm { struct PropertyField{std::string name,type;bool writable=true;}; class PropertyPanel{public:static std::vector<PropertyField> Describe(const Instance&i){std::vector<PropertyField>o={{"Name","string",true},{"Archivable","bool",true}};if(auto*p=dynamic_cast<const BasePart*>(&i)){o.push_back({"Position","Vector3",true});o.push_back({"CFrame","CFrame",true});o.push_back({"Size","Vector3",true});o.push_back({"Color","Color3",true});o.push_back({"Transparency","float",true});o.push_back({"Anchored","bool",true});o.push_back({"CanCollide","bool",true});o.push_back({"CanTouch","bool",true});o.push_back({"CanQuery","bool",true});o.push_back({"Mass","float",true});o.push_back({"Shape","enum",true});}if(dynamic_cast<const Script*>(&i))o.push_back({"Source","string",true});return o;}};}
