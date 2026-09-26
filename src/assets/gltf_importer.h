@@ -5,6 +5,7 @@
 #include <cstring>
 #include <string>
 #include <vector>
+#include <array>
 namespace rsm {
 struct GltfMesh { std::vector<Vector3> positions; std::vector<uint32_t> indices; };
 class GltfImporter {
@@ -39,7 +40,23 @@ class GltfImporter {
   return true;
  }
 public:
- static bool Parse(const std::string&json,GltfMesh&out,std::string&error){out={};error.clear();if(json.find("\"asset\"")==std::string::npos||json.find("\"version\"")==std::string::npos){error="invalid glTF JSON header";return false;}if(!ValidateVersion(json)){error="only glTF 2.0 is supported";return false;}error="glTF JSON requires an embedded BIN buffer for geometry decoding";return false;}
+ static std::string DecodeBase64(const std::string&in){
+  static const std::string chars="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  std::string out; int val=0,bits=-8;
+  for(unsigned char c:in){if(c=='=')break;auto p=chars.find(c);if(p==std::string::npos)continue;val=(val<<6)+(int)p;bits+=6;if(bits>=0){out.push_back(char((val>>bits)&0xff));bits-=8;}}
+  return out;
+ }
+ static bool Parse(const std::string&json,GltfMesh&out,std::string&error){
+  out={};error.clear();if(json.find("\"asset\"")==std::string::npos||json.find("\"version\"")==std::string::npos){error="invalid glTF JSON header";return false;}
+  if(!ValidateVersion(json)){error="only glTF 2.0 is supported";return false;}
+  size_t bp=json.find("\"uri\"");if(bp==std::string::npos){error="glTF requires an embedded data URI or GLB BIN";return false;}
+  size_t q=json.find(':',bp);q=json.find('"',q+1);size_t e=json.find('"',q+1);if(q==std::string::npos||e==std::string::npos){error="invalid buffer URI";return false;}
+  std::string uri=json.substr(q+1,e-q-1),prefix="data:application/octet-stream;base64,";
+  if(uri.rfind(prefix,0)!=0){error="external .bin buffers are not supported by this parser";return false;}
+  return DecodeJson(json,DecodeBase64(uri.substr(prefix.size())),out,error);
+ }
+ static bool Parse(const std::string&json,const std::string&body,GltfMesh&out,std::string&error){
+  out={};error.clear();if(!ValidateVersion(json)){error="only glTF 2.0 is supported";return false;}return DecodeJson(json,body,out,error);}
  static bool ParseGlb(const std::string&bin,GltfMesh&out,std::string&error){
   out={};error.clear();uint32_t magic=0,version=0,total=0;if(bin.size()<20||!ReadU32(bin,0,magic)||!ReadU32(bin,4,version)||!ReadU32(bin,8,total)||magic!=0x46546C67u||version!=2||total>bin.size()){error="invalid GLB header";return false;}
   size_t off=12;std::string json,body;while(off+8<=total){uint32_t len=0,type=0;if(!ReadU32(bin,off,len)||!ReadU32(bin,off+4,type)||off+8ull+len>total){error="invalid GLB chunk";return false;}std::string chunk=bin.substr(off+8,len);if(type==0x4E4F534Au)json=chunk;else if(type==0x004E4942u)body=std::move(chunk);off+=8ull+len;}
