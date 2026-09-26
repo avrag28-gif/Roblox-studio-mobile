@@ -21,7 +21,8 @@ set(RSM_TESTS
   rsm_runtime_asset_security_test
   rsm_script_manager_test
   rsm_release_systems_test
-  rsm_asset_cache_gltf_test)
+  rsm_asset_cache_gltf_test
+  rsm_property_access_test)
 add_executable(rsm_smoke tests/smoke_test.cpp)
 add_executable(rsm_core_instance_test tests/core_instance_test.cpp)
 add_executable(rsm_engine_smoke_test tests/engine_smoke_test.cpp)
@@ -35,6 +36,7 @@ add_executable(rsm_runtime_asset_security_test tests/runtime_asset_security_test
 add_executable(rsm_script_manager_test tests/script_manager_test.cpp)
 add_executable(rsm_release_systems_test tests/release_systems_test.cpp)
 add_executable(rsm_asset_cache_gltf_test tests/asset_cache_gltf_test.cpp)
+add_executable(rsm_property_access_test tests/property_access_test.cpp)
 foreach(t IN LISTS RSM_TESTS)
  target_link_libraries(${t} PRIVATE rsm_core)
 endforeach()
@@ -52,6 +54,7 @@ add_test(NAME runtime_asset_security COMMAND rsm_runtime_asset_security_test)
 add_test(NAME script_manager COMMAND rsm_script_manager_test)
 add_test(NAME release_systems COMMAND rsm_release_systems_test)
 add_test(NAME asset_cache_gltf COMMAND rsm_asset_cache_gltf_test)
+add_test(NAME property_access COMMAND rsm_property_access_test)
 if(RSM_ENABLE_LUAU)
  include(FetchContent)
  FetchContent_Declare(luau GIT_REPOSITORY https://github.com/luau-lang/luau.git GIT_TAG master)
