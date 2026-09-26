@@ -2,6 +2,7 @@
 #include "../core/base_part.h"
 #include "../math/math3d.h"
 #include <algorithm>
+#include <cmath>
 #include <string>
 #include <vector>
 namespace rsm {
