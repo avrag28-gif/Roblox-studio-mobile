@@ -4,7 +4,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 option(RSM_ENABLE_LUAU "Build against official Luau source" OFF)
 option(RSM_ENABLE_IOS "Enable shared iOS bridge build" OFF)
-add_executable(rsm_editor src/main.cpp)\ntarget_link_libraries(rsm_editor PRIVATE rsm_core)\nadd_library(rsm_core STATIC src/core/instance.cpp src/core/data_model.cpp src/core/base_part.cpp)
+add_library(rsm_core STATIC src/core/instance.cpp src/core/data_model.cpp src/core/base_part.cpp)\nadd_executable(rsm_editor src/main.cpp)\ntarget_link_libraries(rsm_editor PRIVATE rsm_core)
 target_include_directories(rsm_core PUBLIC src)
 set(RSM_TESTS
   rsm_smoke
