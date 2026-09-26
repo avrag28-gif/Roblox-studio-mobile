@@ -12,6 +12,6 @@ public:
  void BeginEdit(){Snapshot(undo_);redo_.clear();}
  bool Undo(){if(undo_.empty())return false;Snapshot(redo_);current_=std::move(undo_.back());undo_.pop_back();return true;}
  bool Redo(){if(redo_.empty())return false;Snapshot(undo_);current_=std::move(redo_.back());redo_.pop_back();return true;}
- bool CanUndo()const{return !undo_.empty();} bool CanRedo()const{return !redo_.empty();}
+ bool CanUndo()const{return !undo_.empty();} bool CanRedo()const{return !redo_.empty();} void ClearHistory(){undo_.clear();redo_.clear();} size_t UndoDepth()const{return undo_.size();} size_t RedoDepth()const{return redo_.size();}
 };
 }
