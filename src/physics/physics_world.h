@@ -8,7 +8,7 @@
 namespace rsm {
 struct RaycastHit{BasePart*part=nullptr;float distance=0;Vector3 position{};};
 class PhysicsWorld{
- Vector3 gravity_;std::unordered_map<const BasePart*,Vector3> velocity_;float restitution_=.05f,friction_=.8f;
+ Vector3 gravity_;std::unordered_map<const BasePart*,Vector3> velocity_;std::unordered_map<const BasePart*,float> sleep_;float restitution_=.05f,friction_=.8f,sleepThreshold_=.05f;
  static AABB Bounds(const BasePart*p,Vector3 pos){auto h=p->Size()*.5f;return{pos-h,pos+h};}
 public:
  explicit PhysicsWorld(Vector3 g={0,-196.2f,0}):gravity_(g){}
