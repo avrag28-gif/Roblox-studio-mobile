@@ -1,5 +1,6 @@
 #pragma once
 #include "tcp_transport.h"
+#include "client_server.h"
 #include "../core/data_model.h"
 #include "../scripting/luau_service.h"
 namespace rsm {
