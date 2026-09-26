@@ -18,7 +18,7 @@ class LuauService{
  public:
   using Log=std::function<void(std::string)>;
   explicit LuauService(Log log={}):log_(std::move(log)){}
-  void Bind(DataModel* dm){game_=dm;}
+  void Bind(DataModel* dm){game_=dm;}\n  void SetOutput(Log log){log_=std::move(log);}
   bool CompileAndRun(const std::string& source){
     diagnostics_.clear();std::string sandboxError;if(source.size()>sandbox_.MaxSourceBytes()){diagnostics_.push_back({1,"script exceeds sandbox source limit"});return false;} if(!sandbox_.ValidateSource(source,sandboxError)){diagnostics_.push_back({1,sandboxError});return false;}
 #ifdef RSM_LUAU_ENABLED
