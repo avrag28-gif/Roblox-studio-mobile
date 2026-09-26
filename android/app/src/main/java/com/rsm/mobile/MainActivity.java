@@ -112,6 +112,7 @@ public class MainActivity extends Activity {
   static native void nativeCameraOrbit(float yaw,float pitch);
   static native void nativeCameraZoom(float delta);
   static native boolean nativeRunScript(String source);
+  static native int nativeRaycast(float x,float y,float w,float h);
   void refreshExplorer(){
     explorer.removeAllViews();
     TextView h=text("EXPLORER",13);h.setTypeface(Typeface.DEFAULT,Typeface.BOLD);explorer.addView(h,new LinearLayout.LayoutParams(-1,dp(46)));
@@ -244,7 +245,7 @@ public class MainActivity extends Activity {
       if(e.getAction()==MotionEvent.ACTION_MOVE&&drag&&selected!=null&&mode!=Mode.SELECT){applyGesture(selected,x-lastX,y-lastY);lastX=x;lastY=y;return true;}
       return true;
     }
-    Obj hit(float x,float y){float cx=getWidth()/2,cy=getHeight()/2,scale=dp(22);for(int i=objects.size()-1;i>=0;i--){Obj o=objects.get(i);float ox=cx+o.x*scale,oy=cy-o.y*scale;if(Math.abs(x-ox)<o.sx*scale/2+dp(12)&&Math.abs(y-oy)<o.sy*scale/2+dp(12))return o;}return null;}
+    Obj hit(float x,float y){int nativeHit=nativeRaycast(x,y,getWidth(),getHeight());if(nativeHit>=0&&nativeHit<objects.size())return objects.get(nativeHit);float cx=getWidth()/2,cy=getHeight()/2,scale=dp(22);for(int i=objects.size()-1;i>=0;i--){Obj o=objects.get(i);float ox=cx+o.x*scale,oy=cy-o.y*scale;if(Math.abs(x-ox)<o.sx*scale/2+dp(12)&&Math.abs(y-oy)<o.sy*scale/2+dp(12))return o;}return null;}
     void applyGesture(Obj o,float dx,float dy){float scale=dp(22);if(mode==Mode.MOVE){o.x+=dx/scale;o.y-=dy/scale;}else if(mode==Mode.ROTATE){o.ry+=dx;o.rx+=dy;}else if(mode==Mode.SCALE){o.sx=Math.max(.1f,o.sx+dx/scale);o.sy=Math.max(.1f,o.sy-dy/scale);}changed();}
   }
 }
