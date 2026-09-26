@@ -5,14 +5,26 @@
 #include "renderer/camera.h"
 #include "scripting/luau_service.h"
 #include <memory>
+#include "platform/android_lifecycle.h"
+static rsm::AndroidLifecycle lifecycle;
 static rsm::DataModel game;
 static std::unique_ptr<rsm::GLESRenderer> renderer;
 static rsm::Instance* workspace=nullptr;
 static rsm::Camera camera;
 static std::string lastScriptLog;
 extern "C" JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM*,void*){game.InitializeDefaultServices();workspace=game.GetService("Workspace");return JNI_VERSION_1_6;}
-extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeSurfaceCreated(JNIEnv*,jclass){renderer=std::make_unique<rsm::GLESRenderer>();renderer->Initialize();camera.position={0,8,18};camera.target={0,0,0};renderer->SetCamera(camera);}
-extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeSurfaceChanged(JNIEnv*,jclass,jint w,jint h){if(renderer)renderer->Resize(w,h);}
+extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeSurfaceCreated(JNIEnv*,jclass){
+ lifecycle.SurfaceCreated(); renderer=std::make_unique<rsm::GLESRenderer>(); renderer->Initialize();
+ camera.position={0,8,18};camera.target={0,0,0};renderer->SetCamera(camera);
+}
+extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeSurfaceDestroyed(JNIEnv*,jclass){
+ lifecycle.SurfaceDestroyed(); if(renderer){renderer->Shutdown();renderer.reset();}
+}
+extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeLifecycle(JNIEnv*,jclass,jint state){
+ if(state==0)lifecycle.Stop(); else if(state==1){if(lifecycle.State()==rsm::AppState::Stopped)lifecycle.Start();else lifecycle.Resume();}
+ else lifecycle.Pause();
+}
+extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeSurfaceChanged(JNIEnv*,jclass,jint w,jint h){lifecycle.SurfaceChanged(w,h);if(renderer)renderer->Resize(w,h);}
 extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeSurfaceDraw(JNIEnv*,jclass){if(renderer&&workspace)renderer->Render(game);}
 extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeCameraOrbit(JNIEnv*,jclass,jfloat yaw,jfloat pitch){camera.Orbit(yaw,pitch);if(renderer)renderer->SetCamera(camera);}
 extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeCameraZoom(JNIEnv*,jclass,jfloat delta){camera.Zoom(delta);if(renderer)renderer->SetCamera(camera);}
