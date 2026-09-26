@@ -34,7 +34,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeSurface
 }
 extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeCameraOrbit(JNIEnv*,jclass,jfloat yaw,jfloat pitch){camera.Orbit(yaw,pitch);if(renderer)renderer->SetCamera(camera);}
 extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeCameraZoom(JNIEnv*,jclass,jfloat delta){camera.Zoom(delta);if(renderer)renderer->SetCamera(camera);}
-extern "C" JNIEXPORT jboolean JNICALL Java_com_rsm_mobile_MainActivity_nativeRunScript(JNIEnv* env,jclass,jstring src){const char* raw=env->GetStringUTFChars(src,nullptr);rsm::LuauService service([](std::string m){lastScriptLog=std::move(m);});service.Bind(&game);bool ok=service.CompileAndRun(raw?raw:"");env->ReleaseStringUTFChars(src,raw);return ok?JNI_TRUE:JNI_FALSE;}
+extern "C" JNIEXPORT jboolean JNICALL Java_com_rsm_mobile_MainActivity_nativeRunScript(JNIEnv* env,jclass,jstring src){const char* raw=env->GetStringUTFChars(src,nullptr);rsm::LuauService service([](std::string m){lastScriptLog=std::move(m);});service.Bind(runtimeGame?runtimeGame.get():&game);bool ok=service.CompileAndRun(raw?raw:"");env->ReleaseStringUTFChars(src,raw);return ok?JNI_TRUE:JNI_FALSE;}
 extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeSyncScene(JNIEnv* env,jclass,jfloatArray data){
  if(!workspace)return; for(auto* c:workspace->GetChildren()) c->Destroy();
  jsize n=env->GetArrayLength(data); if(n%13)return; std::vector<jfloat> v(n);env->GetFloatArrayRegion(data,0,n,v.data());
