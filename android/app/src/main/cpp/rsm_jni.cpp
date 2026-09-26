@@ -2,12 +2,14 @@
 #include "core/data_model.h"
 #include "core/instance_factory.h"
 #include "renderer/gles_renderer.h"
+#include "renderer/camera.h"
 #include <memory>
 static rsm::DataModel game;
 static std::unique_ptr<rsm::GLESRenderer> renderer;
 static rsm::Instance* workspace=nullptr;
+static rsm::Camera camera;
 extern "C" JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM*,void*){game.InitializeDefaultServices();workspace=game.GetService("Workspace");return JNI_VERSION_1_6;}
-extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeSurfaceCreated(JNIEnv*,jclass){renderer=std::make_unique<rsm::GLESRenderer>();renderer->Initialize();}
+extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeSurfaceCreated(JNIEnv*,jclass){renderer=std::make_unique<rsm::GLESRenderer>();renderer->Initialize();camera.position={0,8,18};camera.target={0,0,0};renderer->SetCamera(camera);}
 extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeSurfaceChanged(JNIEnv*,jclass,jint w,jint h){if(renderer)renderer->Resize(w,h);}
 extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeSurfaceDraw(JNIEnv*,jclass){if(renderer&&workspace)renderer->Render(game);}
 extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeSyncScene(JNIEnv* env,jclass,jfloatArray data){
