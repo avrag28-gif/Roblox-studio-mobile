@@ -19,7 +19,8 @@ set(RSM_TESTS
   rsm_complete_engine_test
   rsm_mobile_systems_test
   rsm_runtime_asset_security_test
-  rsm_script_manager_test)
+  rsm_script_manager_test
+  rsm_release_systems_test)
 add_executable(rsm_smoke tests/smoke_test.cpp)
 add_executable(rsm_core_instance_test tests/core_instance_test.cpp)
 add_executable(rsm_engine_smoke_test tests/engine_smoke_test.cpp)
@@ -31,6 +32,7 @@ add_executable(rsm_complete_engine_test tests/complete_engine_test.cpp)
 add_executable(rsm_mobile_systems_test tests/mobile_systems_test.cpp)
 add_executable(rsm_runtime_asset_security_test tests/runtime_asset_security_test.cpp)
 add_executable(rsm_script_manager_test tests/script_manager_test.cpp)
+add_executable(rsm_release_systems_test tests/release_systems_test.cpp)
 foreach(t IN LISTS RSM_TESTS)
  target_link_libraries(${t} PRIVATE rsm_core)
 endforeach()
@@ -46,6 +48,7 @@ add_test(NAME complete_engine COMMAND rsm_complete_engine_test)
 add_test(NAME mobile_systems COMMAND rsm_mobile_systems_test)
 add_test(NAME runtime_asset_security COMMAND rsm_runtime_asset_security_test)
 add_test(NAME script_manager COMMAND rsm_script_manager_test)
+add_test(NAME release_systems COMMAND rsm_release_systems_test)
 if(RSM_ENABLE_LUAU)
  include(FetchContent)
  FetchContent_Declare(luau GIT_REPOSITORY https://github.com/luau-lang/luau.git GIT_TAG master)
