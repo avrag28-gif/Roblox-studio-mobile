@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <fstream>
 #include <algorithm>
+#include <cctype>
 namespace rsm {
 enum class ImportType{Texture,Mesh,Sound,Animation,Material,Script};
 struct AssetRecord{std::string id,path;ImportType type=ImportType::Mesh;size_t bytes=0;bool validated=false,cached=false;};
