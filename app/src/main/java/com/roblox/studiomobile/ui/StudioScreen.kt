@@ -45,10 +45,18 @@ class StudioScreen(private val context:Context,private val runtime:CoreRuntime){
   surface.onTransformGestureStart={transform.beginGesture()}
   surface.onTransformGestureEnd={commit->transform.endGesture(commit)}
   surface.setTransformTool(transform.tool)
-  surface.gizmoOrigin={selected?.let{i->runtime.properties.get<Vec3>(i,"Position") ?: Vec3() } ?: Vec3()}
-  surface.gizmoLength={selected?.let{i->val s=runtime.properties.get<Vec3>(i,"Size") ?: Vec3(4f,1f,2f);(s.x+s.y+s.z).coerceAtLeast(1f)*1.4f} ?: 1f}
+  surface.gizmoOrigin={
+   val items=runtime.selection.get().filter{it.className=="Part"}
+   if(items.isEmpty()) Vec3() else {
+    val sum=items.map{runtime.properties.get<Vec3>(it,"Position") ?: Vec3()}.fold(Vec3()){a,b->Vec3(a.x+b.x,a.y+b.y,a.z+b.z)}
+    Vec3(sum.x/items.size,sum.y/items.size,sum.z/items.size)
+   }
+  }
+  surface.gizmoLength={
+   runtime.selection.get().filter{it.className=="Part"}.maxOfOrNull{val s=runtime.properties.get<Vec3>(it,"Size") ?: Vec3(4f,1f,2f);(s.x+s.y+s.z).coerceAtLeast(1f)*1.4f} ?: 1f
+  }
   surface.onGizmoAxisPick={axis->transform.axis=when(axis){GizmoAxis.X->TransformAxis.X;GizmoAxis.Y->TransformAxis.Y;GizmoAxis.Z->TransformAxis.Z;GizmoAxis.None->TransformAxis.Screen}}
-  surface.onTransformDrag={dx,dy->selected?.let{transform.applyScreenDelta(it,dx,dy)} ?: false}
+  surface.onTransformDrag={dx,dy->transform.applyScreenDelta(runtime.selection.get(),dx,dy)}
   surface.onTransformAxisDelta={axis,delta->transform.applyAxisDelta(runtime.selection.get(),axis,delta)}
   frame.addView(surface,FrameLayout.LayoutParams(-1,-1))
   return frame
