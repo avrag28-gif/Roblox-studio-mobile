@@ -20,6 +20,7 @@ class ViewportSurface(
     private var gesture = 0
     private var lockedAxis = com.roblox.studiomobile.editor.GizmoAxis.None
     private var lastAxisValue = 0f
+    private val renderer: ViewportRenderer
     var onPicked: ((com.roblox.studiomobile.core.Instance) -> Unit)? = null
     var onTransformDrag: ((Float, Float) -> Boolean)? = null
     var onTransformAxisDelta: ((com.roblox.studiomobile.editor.GizmoAxis, Float) -> Boolean)? = null
@@ -33,7 +34,8 @@ class ViewportSurface(
 
     init {
         setEGLContextClientVersion(2)
-        setRenderer(ViewportRenderer(graph, camera, selection, properties))
+        renderer = ViewportRenderer(graph, camera, selection, properties)
+        setRenderer(renderer)
         renderMode = RENDERMODE_CONTINUOUSLY
         isFocusable = true
         isFocusableInTouchMode = true
@@ -51,7 +53,11 @@ class ViewportSurface(
                 val origin = gizmoOrigin?.invoke()
                 val length = gizmoLength?.invoke()
                 if (origin != null && length != null) {
-                    lockedAxis = com.roblox.studiomobile.editor.GizmoPicker().pick(camera.ray(event.x, event.y, width, height), origin, length)
+                    lockedAxis = if (renderer.transformTool == com.roblox.studiomobile.editor.TransformTool.Rotate) {
+                        com.roblox.studiomobile.editor.GizmoPicker().pickRotateRing(camera.ray(event.x, event.y, width, height), origin, length * 0.75f)
+                    } else {
+                        com.roblox.studiomobile.editor.GizmoPicker().pick(camera.ray(event.x, event.y, width, height), origin, length)
+                    }
                     onGizmoAxisPick?.invoke(lockedAxis)
                 if (lockedAxis != com.roblox.studiomobile.editor.GizmoAxis.None) {
                     lastAxisValue = com.roblox.studiomobile.editor.GizmoPicker().axisParameter(
