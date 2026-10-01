@@ -1,6 +1,7 @@
 #include <jni.h>
 #include "core/data_model.h"
 #include "core/instance_factory.h"
+#include "core/change_history.h"
 #include "renderer/gles_renderer.h"
 #include "renderer/camera.h"
 #include "physics/physics_world.h"
@@ -22,6 +23,8 @@ static std::unique_ptr<rsm::DataModel> runtimeGame;
 static std::mutex engineMutex;
 static std::unordered_map<std::string, rsm::Instance*> editorIndex;
 static rsm::PhysicsWorld runtimePhysics;
+static rsm::ChangeHistory changeHistory;
+static bool applyingHistory=false;
 extern "C" JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM*,void*){game.InitializeDefaultServices();workspace=game.GetService("Workspace");return JNI_VERSION_1_6;}
 extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeSurfaceCreated(JNIEnv*,jclass){
  lifecycle.SurfaceCreated(); renderer=std::make_unique<rsm::GLESRenderer>(); renderer->Initialize();
@@ -142,8 +145,36 @@ extern "C" JNIEXPORT jint JNICALL Java_com_rsm_mobile_MainActivity_nativeRaycast
  auto it=editorIndex.find(s?s:"");if(it!=editorIndex.end()){int i=0;for(auto* child:workspace->GetChildren()){if(child==it->second){result=i;break;}++i;}}
  if(s)env->ReleaseStringUTFChars(id,s);env->DeleteLocalRef(id);return result;
 }
-extern "C" JNIEXPORT jboolean JNICALL Java_com_rsm_mobile_MainActivity_nativeSetProperty(JNIEnv* env,jclass,jstring name,jstring property,jdouble value){std::lock_guard<std::mutex> lock(engineMutex);const char*n=env->GetStringUTFChars(name,nullptr);const char*p=env->GetStringUTFChars(property,nullptr);auto it=editorIndex.find(n?n:"");bool ok=false;if(it!=editorIndex.end()){if(auto*part=dynamic_cast<rsm::BasePart*>(it->second)){if(std::string(p)=="PositionX"){auto v=part->Position();v.x=value;part->SetPosition(v);ok=true;}else if(std::string(p)=="PositionY"){auto v=part->Position();v.y=value;part->SetPosition(v);ok=true;}else if(std::string(p)=="PositionZ"){auto v=part->Position();v.z=value;part->SetPosition(v);ok=true;}else if(std::string(p)=="SizeX"){auto v=part->Size();v.x=value;part->SetSize(v);ok=true;}else if(std::string(p)=="SizeY"){auto v=part->Size();v.y=value;part->SetSize(v);ok=true;}else if(std::string(p)=="SizeZ"){auto v=part->Size();v.z=value;part->SetSize(v);ok=true;}else if(std::string(p)=="Anchored"){part->SetAnchored(value!=0);ok=true;}else if(std::string(p)=="CanCollide"){part->SetCanCollide(value!=0);ok=true;}}}if(n)env->ReleaseStringUTFChars(name,n);if(p)env->ReleaseStringUTFChars(property,p);return ok?JNI_TRUE:JNI_FALSE;}
-
+static bool ApplyNativeProperty(const std::string&id,const std::string&property,double value){
+ auto it=editorIndex.find(id);if(it==editorIndex.end())return false;
+ auto*part=dynamic_cast<rsm::BasePart*>(it->second);if(!part)return false;
+ if(property=="PositionX"){auto v=part->Position();v.x=value;part->SetPosition(v);}
+ else if(property=="PositionY"){auto v=part->Position();v.y=value;part->SetPosition(v);}
+ else if(property=="PositionZ"){auto v=part->Position();v.z=value;part->SetPosition(v);}
+ else if(property=="SizeX"){auto v=part->Size();v.x=value;part->SetSize(v);}
+ else if(property=="SizeY"){auto v=part->Size();v.y=value;part->SetSize(v);}
+ else if(property=="SizeZ"){auto v=part->Size();v.z=value;part->SetSize(v);}
+ else if(property=="Anchored"){part->SetAnchored(value!=0); }
+ else if(property=="CanCollide"){part->SetCanCollide(value!=0); }
+ else return false; return true;
+}
+static double ReadNativeProperty(rsm::Instance*raw,const std::string&property){
+ auto*part=dynamic_cast<rsm::BasePart*>(raw);if(!part)return 0;
+ if(property=="PositionX")return part->Position().x;if(property=="PositionY")return part->Position().y;if(property=="PositionZ")return part->Position().z;
+ if(property=="SizeX")return part->Size().x;if(property=="SizeY")return part->Size().y;if(property=="SizeZ")return part->Size().z;
+ if(property=="Anchored")return part->Anchored()?1:0;if(property=="CanCollide")return part->CanCollide()?1:0;return 0;
+}
+extern "C" JNIEXPORT jboolean JNICALL Java_com_rsm_mobile_MainActivity_nativeSetProperty(JNIEnv* env,jclass,jstring name,jstring property,jdouble value){
+ std::lock_guard<std::mutex> lock(engineMutex);const char*n=env->GetStringUTFChars(name,nullptr),*p=env->GetStringUTFChars(property,nullptr);std::string id=n?n:"",prop=p?p:"";auto it=editorIndex.find(id);bool ok=false;
+ if(it!=editorIndex.end()){double before=ReadNativeProperty(it->second,prop);ok=ApplyNativeProperty(id,prop,value);if(ok&&!applyingHistory)changeHistory.Push({id,prop,before,value});}
+ if(n)env->ReleaseStringUTFChars(name,n);if(p)env->ReleaseStringUTFChars(property,p);return ok?JNI_TRUE:JNI_FALSE;
+}
+extern "C" JNIEXPORT jboolean JNICALL Java_com_rsm_mobile_MainActivity_nativeUndo(JNIEnv*,jclass){
+ std::lock_guard<std::mutex> lock(engineMutex);applyingHistory=true;bool ok=changeHistory.Undo([](const std::string&id,const std::string&p,double v){return ApplyNativeProperty(id,p,v);});applyingHistory=false;return ok?JNI_TRUE:JNI_FALSE;
+}
+extern "C" JNIEXPORT jboolean JNICALL Java_com_rsm_mobile_MainActivity_nativeRedo(JNIEnv*,jclass){
+ std::lock_guard<std::mutex> lock(engineMutex);applyingHistory=true;bool ok=changeHistory.Redo([](const std::string&id,const std::string&p,double v){return ApplyNativeProperty(id,p,v);});applyingHistory=false;return ok?JNI_TRUE:JNI_FALSE;
+}
 extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeSetPlaying(JNIEnv*,jclass,jboolean playing){
  std::lock_guard<std::mutex> lock(engineMutex);
  if(playing){auto clone=game.Clone();auto*dm=dynamic_cast<rsm::DataModel*>(clone.release());if(dm){runtimeGame.reset(dm);runtimePhysics.Clear();}}
