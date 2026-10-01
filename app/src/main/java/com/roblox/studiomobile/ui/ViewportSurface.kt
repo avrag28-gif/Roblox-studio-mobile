@@ -16,6 +16,7 @@ class ViewportSurface(
     private var lastSpan = 0f
     private var gesture = 0
     var onPicked: ((com.roblox.studiomobile.core.Instance) -> Unit)? = null
+    var onDrag: ((Float, Float) -> Unit)? = null
     private var downX = 0f
     private var downY = 0f
 
@@ -52,7 +53,8 @@ class ViewportSurface(
                 } else if (gesture == 1) {
                     val dx = event.x - lastX
                     val dy = event.y - lastY
-                    camera.orbit(-dx * 0.008f, -dy * 0.008f)
+                    onDrag?.invoke(dx,dy)
+                    if (onDrag == null) camera.orbit(-dx * 0.008f, -dy * 0.008f)
                     lastX = event.x
                     lastY = event.y
                 }
