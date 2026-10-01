@@ -14,6 +14,7 @@ class StudioScreen(private val context:Context,private val runtime:CoreRuntime){
  private val properties=LinearLayout(context).apply{orientation=LinearLayout.VERTICAL}
  private var selected:Instance?=null
  private var surfaceRef:ViewportSurface?=null
+ private var multiSelect=false
  fun view():LinearLayout{
   val root=LinearLayout(context).apply{orientation=LinearLayout.VERTICAL;setBackgroundColor(Color.rgb(24,24,27))}
   val toolbar=LinearLayout(context).apply{orientation=LinearLayout.HORIZONTAL}
@@ -25,7 +26,8 @@ class StudioScreen(private val context:Context,private val runtime:CoreRuntime){
   toolbar.addView(Button(context).apply{text="Scale";setOnClickListener{transform.tool=TransformTool.Scale; surfaceRef?.setTransformTool(transform.tool)}},LinearLayout.LayoutParams(0,52,1f))
   toolbar.addView(Button(context).apply{text="Rotate";setOnClickListener{transform.tool=TransformTool.Rotate; surfaceRef?.setTransformTool(transform.tool)}} ,LinearLayout.LayoutParams(0,52,1f))
   toolbar.addView(Button(context).apply{text="Select";setOnClickListener{transform.tool=TransformTool.Select; surfaceRef?.setTransformTool(transform.tool)}},LinearLayout.LayoutParams(0,52,1f))
-  toolbar.addView(Button(context).apply{text="Delete";setOnClickListener{selected?.let{controller.delete(it);selected=null;refresh()}}},LinearLayout.LayoutParams(0,52,1f))
+  toolbar.addView(Button(context).apply{text="Multi";setOnClickListener{multiSelect=!multiSelect;text=if(multiSelect)"Multi*" else "Multi"}} ,LinearLayout.LayoutParams(0,52,1f))
+  toolbar.addView(Button(context).apply{text="Delete";setOnClickListener{runtime.selection.get().toList().forEach{controller.delete(it)};selected=null;refresh()}},LinearLayout.LayoutParams(0,52,1f))
   root.addView(toolbar,LinearLayout.LayoutParams(-1,60))
   val body=LinearLayout(context).apply{orientation=LinearLayout.HORIZONTAL}
   body.addView(explorerView(),LinearLayout.LayoutParams(0,-1,0.30f))
@@ -47,13 +49,17 @@ class StudioScreen(private val context:Context,private val runtime:CoreRuntime){
   surface.gizmoLength={selected?.let{i->val s=runtime.properties.get<Vec3>(i,"Size") ?: Vec3(4f,1f,2f);(s.x+s.y+s.z).coerceAtLeast(1f)*1.4f} ?: 1f}
   surface.onGizmoAxisPick={axis->transform.axis=when(axis){GizmoAxis.X->TransformAxis.X;GizmoAxis.Y->TransformAxis.Y;GizmoAxis.Z->TransformAxis.Z;GizmoAxis.None->TransformAxis.Screen}}
   surface.onTransformDrag={dx,dy->selected?.let{transform.applyScreenDelta(it,dx,dy)} ?: false}
-  surface.onTransformAxisDelta={axis,delta->selected?.let{transform.applyAxisDelta(it,axis,delta)} ?: false}
+  surface.onTransformAxisDelta={axis,delta->transform.applyAxisDelta(runtime.selection.get(),axis,delta)}
   frame.addView(surface,FrameLayout.LayoutParams(-1,-1))
   return frame
  }
  private fun targetParent():Instance=selected?:runtime.services.get<Instance>("Workspace")?:runtime.dataModel
  private fun create(className:String){val i=controller.create(className,targetParent());refresh();select(i)}
- private fun select(i:Instance){selected=i;controller.select(i);showProperties(i)}
+ private fun select(i:Instance){
+  selected=i
+  if(multiSelect) runtime.selection.add(i) else controller.select(i)
+  showProperties(i)
+ }
  private fun refresh(){list.removeAllViews();explorer.flatten().forEach{n->list.addView(Button(context).apply{text=("  ".repeat(n.depth))+n.instance.name;gravity=Gravity.START;setOnClickListener{select(n.instance)}},LinearLayout.LayoutParams(-1,48))}}
  private fun explorerView():ScrollView=ScrollView(context).apply{addView(list);post{refresh()}}
  private fun propertyView():ScrollView=ScrollView(context).apply{addView(properties)}
