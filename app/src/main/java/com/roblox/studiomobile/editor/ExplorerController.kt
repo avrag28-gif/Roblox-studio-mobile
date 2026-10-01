@@ -35,4 +35,12 @@ class ExplorerController(private val runtime:CoreRuntime){
   })
  }
  fun select(instance:Instance){runtime.selection.set(listOf(instance))}
+ fun rename(instance:Instance,newName:String){
+  val old=instance.name
+  if(old==newName)return
+  runtime.transactions.execute(object:Command{
+   override fun execute(){instance.rename(newName)}
+   override fun undo(){instance.rename(old)}
+  })
+ }
 }
