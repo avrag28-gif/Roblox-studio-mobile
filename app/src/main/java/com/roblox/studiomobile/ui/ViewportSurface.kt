@@ -4,12 +4,14 @@ import android.content.Context
 import android.opengl.GLSurfaceView
 import android.view.MotionEvent
 import com.roblox.studiomobile.editor.SceneGraph
+import com.roblox.studiomobile.core.SelectionService
 import com.roblox.studiomobile.editor.ViewportCamera
 
 class ViewportSurface(
     context: Context,
     graph: SceneGraph,
-    private val camera: ViewportCamera
+    private val camera: ViewportCamera,
+    selection: SelectionService
 ) : GLSurfaceView(context) {
     private var lastX = 0f
     private var lastY = 0f
@@ -24,7 +26,7 @@ class ViewportSurface(
 
     init {
         setEGLContextClientVersion(2)
-        setRenderer(ViewportRenderer(graph, camera))
+        setRenderer(ViewportRenderer(graph, camera, selection))
         renderMode = RENDERMODE_CONTINUOUSLY
         isFocusable = true
         isFocusableInTouchMode = true
