@@ -5,6 +5,7 @@ import android.opengl.GLSurfaceView
 import android.opengl.Matrix
 import com.roblox.studiomobile.editor.SceneGraph
 import com.roblox.studiomobile.core.SelectionService
+import com.roblox.studiomobile.core.PropertyStore
 import com.roblox.studiomobile.editor.ViewportCamera
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -15,7 +16,8 @@ import javax.microedition.khronos.opengles.GL10
 class ViewportRenderer(
     private val graph: SceneGraph,
     private val camera: ViewportCamera,
-    selection: SelectionService
+    selection: SelectionService,
+    private val properties: PropertyStore
 ) : GLSurfaceView.Renderer {
     private var program = 0
     private var positionHandle = 0
@@ -36,10 +38,6 @@ class ViewportRenderer(
     private val mvp = FloatArray(16)
 
     private val gizmoLines: FloatBuffer = ByteBuffer.allocateDirect(GIZMO_LINES.size * 4).order(ByteOrder.nativeOrder()).asFloatBuffer().apply { put(GIZMO_LINES); position(0) }
-
-    private var runtimeRotationX = 0f
-    private var runtimeRotationY = 0f
-    private var runtimeRotationZ = 0f
 
     private val cube: FloatBuffer = ByteBuffer.allocateDirect(CUBE.size * 4)
         .order(ByteOrder.nativeOrder())
@@ -95,9 +93,10 @@ class ViewportRenderer(
                 val s = node.transform.scale
                 Matrix.setIdentityM(model, 0)
                 Matrix.translateM(model, 0, p.x, p.y, p.z)
-                Matrix.rotateM(model, 0, runtimeRotationX, 1f, 0f, 0f)
-                Matrix.rotateM(model, 0, runtimeRotationY, 0f, 1f, 0f)
-                Matrix.rotateM(model, 0, runtimeRotationZ, 0f, 0f, 1f)
+                val rotation = properties.get<com.roblox.studiomobile.editor.Vec3>(node.instance, "Orientation") ?: com.roblox.studiomobile.editor.Vec3()
+                Matrix.rotateM(model, 0, rotation.x, 1f, 0f, 0f)
+                Matrix.rotateM(model, 0, rotation.y, 0f, 1f, 0f)
+                Matrix.rotateM(model, 0, rotation.z, 0f, 0f, 1f)
                 Matrix.scaleM(model, 0, s.x, s.y, s.z)
                 drawModel(model, node.instance.id in selectedIds)
             }
