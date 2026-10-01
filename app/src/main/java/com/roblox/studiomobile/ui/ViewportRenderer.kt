@@ -37,6 +37,10 @@ class ViewportRenderer(
 
     private val gizmoLines: FloatBuffer = ByteBuffer.allocateDirect(GIZMO_LINES.size * 4).order(ByteOrder.nativeOrder()).asFloatBuffer().apply { put(GIZMO_LINES); position(0) }
 
+    private var runtimeRotationX = 0f
+    private var runtimeRotationY = 0f
+    private var runtimeRotationZ = 0f
+
     private val cube: FloatBuffer = ByteBuffer.allocateDirect(CUBE.size * 4)
         .order(ByteOrder.nativeOrder())
         .asFloatBuffer()
@@ -91,6 +95,9 @@ class ViewportRenderer(
                 val s = node.transform.scale
                 Matrix.setIdentityM(model, 0)
                 Matrix.translateM(model, 0, p.x, p.y, p.z)
+                Matrix.rotateM(model, 0, runtimeRotationX, 1f, 0f, 0f)
+                Matrix.rotateM(model, 0, runtimeRotationY, 0f, 1f, 0f)
+                Matrix.rotateM(model, 0, runtimeRotationZ, 0f, 0f, 1f)
                 Matrix.scaleM(model, 0, s.x, s.y, s.z)
                 drawModel(model, node.instance.id in selectedIds)
             }
