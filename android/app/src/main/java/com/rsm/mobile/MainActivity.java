@@ -117,7 +117,7 @@ static class Obj {
     return bar;
   }
 
-  void addPart(){Obj o=new Obj("Part");o.x=objects.size()*2-2;o.y=1;objects.add(o);nativeCreateInstance(o.id,o.name,o.type,o.parent);syncNativeScene();select(o);dirty=true;append("INFO","Created Part");}
+  void addPart(){Obj o=new Obj("Part");o.x=objects.size()*2-2;o.y=1;objects.add(o);nativeCreateInstance(o.id,o.name,o.type,o.parent);select(o);dirty=true;append("INFO","Created Part");}
   void addModel(){Obj o=new Obj("Model");o.type="Model";o.sx=o.sy=o.sz=4;o.y=2;o.color=Color.rgb(190,100,220);objects.add(o);nativeCreateInstance(o.id,o.name,o.type,o.parent);syncNativeScene();select(o);dirty=true;append("INFO","Created Model");}
   void togglePlay(Button b){
     playing=!playing;b.setText(playing?"■  Stop":"▶  Play");nativeSetPlaying(playing);status.setText(playing?"●  PLAY   •   runtime scene active":"●  EDIT   •   "+objects.size()+" objects   •   Ready");
@@ -225,7 +225,7 @@ static class Obj {
   void duplicate(){if(selected==null)return;String newId=nativeDuplicateInstance(selected.id);if(newId==null)return;refreshNativeScene();applyNativeSceneToEditor();Obj n=find(newId);if(n==null){for(Obj o:objects)if(o.name.equals(selected.name+" Copy")){n=o;break;}}if(n!=null){selected=n;dirty=true;writeRecovery();refreshExplorer();refreshProps();viewport.invalidate();append("INFO","Duplicated "+selected.name);}}
 
   void deleteSelected(){if(selected==null)return;String n=selected.name;String removed=selected.id;nativeDeleteInstance(removed);ArrayList<Obj> gone=new ArrayList<>();for(Obj o:objects){String p=o.parent;while(!"Workspace".equals(p)){if(p.equals(removed)){gone.add(o);break;}Obj q=find(p);if(q==null)break;p=q.parent;}}gone.add(selected);objects.removeAll(gone);selected=null;changed();append("INFO","Deleted "+n);}
-  void cycleColor(){int[] c={Color.rgb(90,160,240),Color.rgb(240,100,90),Color.rgb(100,220,130),Color.rgb(220,190,70),Color.rgb(190,100,220),Color.WHITE};int i=0;for(int j=0;j<c.length;j++)if(selected.color==c[j])i=(j+1)%c.length;selected.color=c[i];changed();refreshProps();}
+  void cycleColor(){int[] c={Color.rgb(90,160,240),Color.rgb(240,100,90),Color.rgb(100,220,130),Color.rgb(220,190,70),Color.rgb(190,100,220),Color.WHITE};int i=0;for(int j=0;j<c.length;j++)if(selected.color==c[j])i=(j+1)%c.length;selected.color=c[i];nativeSetProperty(selected.id,"ColorR",Color.red(selected.color)/255.0);nativeSetProperty(selected.id,"ColorG",Color.green(selected.color)/255.0);nativeSetProperty(selected.id,"ColorB",Color.blue(selected.color)/255.0);changed();refreshProps();}
   
   void bottom(String tab){
     bottom.removeAllViews();LinearLayout tabs=new LinearLayout(this);String[] names={"OUTPUT","SCRIPT","ASSETS","DEBUG"};
@@ -316,6 +316,6 @@ static class Obj {
       return true;
     }
     Obj hit(float x,float y){String nativeId=nativeRaycastId(x,y,getWidth(),getHeight());if(nativeId!=null){for(Obj o:objects)if(nativeId.equals(o.id))return o;}float cx=getWidth()/2,cy=getHeight()/2,scale=dp(22);for(int i=objects.size()-1;i>=0;i--){Obj o=objects.get(i);float ox=cx+o.x*scale,oy=cy-o.y*scale;if(Math.abs(x-ox)<o.sx*scale/2+dp(12)&&Math.abs(y-oy)<o.sy*scale/2+dp(12))return o;}return null;}
-    void applyGesture(Obj o,float dx,float dy){float scale=dp(22);if(mode==Mode.MOVE){o.x+=dx/scale;o.y-=dy/scale;}else if(mode==Mode.ROTATE){o.ry+=dx;o.rx+=dy;}else if(mode==Mode.SCALE){o.sx=Math.max(.1f,o.sx+dx/scale);o.sy=Math.max(.1f,o.sy-dy/scale);}changed();}
+    void applyGesture(Obj o,float dx,float dy){float scale=dp(22);if(mode==Mode.MOVE){o.x+=dx/scale;o.y-=dy/scale;nativeSetProperty(o.id,"PositionX",o.x);nativeSetProperty(o.id,"PositionY",o.y);}else if(mode==Mode.ROTATE){o.ry+=dx;o.rx+=dy;}else if(mode==Mode.SCALE){o.sx=Math.max(.1f,o.sx+dx/scale);o.sy=Math.max(.1f,o.sy-dy/scale);nativeSetProperty(o.id,"SizeX",o.sx);nativeSetProperty(o.id,"SizeY",o.sy);}changed();}
   }
 }
