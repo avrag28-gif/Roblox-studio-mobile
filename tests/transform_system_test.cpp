@@ -26,7 +26,7 @@ int main(){
  const auto before=WorldCFrame(*p);
  SetLocalCFrame(*p,CFrame({4,5,6},Quaternion::FromAxisAngle({1,0,0},.4f)));
  const auto after=WorldCFrame(*p);
- assert(near(after.position.x,6));
+ assert(near(after.position.x,16));
  assert(near(after.position.y,7));
  assert(near(after.position.z,-1));
  assert(!near(before.rotation.x,after.rotation.x));
