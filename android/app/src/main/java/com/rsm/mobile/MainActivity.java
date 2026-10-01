@@ -144,7 +144,6 @@ static class Obj {
   static native int nativeRaycast(float x,float y,float w,float h);
   static native String nativeRaycastId(float x,float y,float w,float h);
   static native void nativeSetPlaying(boolean playing);
-  static native boolean nativeSetProperty(String name,String property,double value);
   static native String nativeGetSceneSnapshot();
   static native boolean nativeCreateInstance(String id,String name,String type,String parentId);
   static native boolean nativeDeleteInstance(String id);
