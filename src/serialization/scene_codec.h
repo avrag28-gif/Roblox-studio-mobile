@@ -65,42 +65,40 @@ class SceneCodec {
  }
 public:
  static std::unique_ptr<DataModel> Load(const std::string&s,std::string&error){
-  error.clear();if(!Valid(s)){error="invalid RSM scene header";return nullptr;}
-  auto dm=std::make_unique<DataModel>();dm->InitializeDefaultServices();
-  std::vector<Instance*>stack;std::istringstream in(s);std::string line;std::getline(in,line);
+  error.clear();if(s.rfind("RSM_SCENE 2\n",0)!=0){error="unsupported scene version";return nullptr;}
+  auto dm=std::make_unique<DataModel>();std::vector<Instance*>stack;std::istringstream in(s);std::string line;std::getline(in,line);
   while(std::getline(in,line)){
    if(line.empty())continue;
    std::vector<std::string>f;std::stringstream ss(line);std::string part;while(std::getline(ss,part,'|'))f.push_back(part);
-   if(f.size()<3){error="malformed scene record";return nullptr;}
+   if(f.size()<6){error="malformed scene record";return nullptr;}
    int depth=0;try{depth=std::stoi(f[0]);}catch(...){error="invalid scene depth";return nullptr;}
    if(depth<0||depth>int(stack.size())){error="invalid scene hierarchy";return nullptr;}
-   const std::string cls=Unhex(f[1]),name=Unhex(f[2]);
-   if(depth==0&&cls=="DataModel"){stack.clear();continue;}
+   const std::string cls=Unhex(f[1]),name=Unhex(f[2]),id=Unhex(f[3]);
+   if(depth==0&&cls=="DataModel"){dm->SetId(id);dm->SetArchivable(std::stoi(f[4])!=0);stack.clear();continue;}
    if(depth==1&&cls=="Service"){
-    auto*svc=dm->GetService(name);if(!svc){error="unknown service";return nullptr;}
-    stack.resize(1);stack[0]=svc;continue;
+    auto*svc=dm->GetService(name);if(!svc){error="unknown service";return nullptr;}svc->SetId(id);svc->SetArchivable(std::stoi(f[4])!=0);stack.resize(1);stack[0]=svc;continue;
    }
-   auto obj=InstanceFactory::New(cls);if(!obj){error="unsupported instance: "+cls;return nullptr;}obj->SetName(name);
+   auto obj=InstanceFactory::New(cls);if(!obj){error="unsupported instance: "+cls;return nullptr;}obj->SetName(name);obj->SetId(id);obj->SetArchivable(std::stoi(f[4])!=0);
+   std::size_t attrIndex=5;
    if(auto*p=dynamic_cast<BasePart*>(obj.get())){
-    if(f.size()>=10){
-     Vector3 pos,size,colv;
-     if(!Parse3(f[3],pos)||!Parse3(f[4],size)||!Parse3(f[5],colv)){error="invalid BasePart vector";return nullptr;}
-     p->SetPosition(pos);p->SetSize(size);p->SetColor({colv.x,colv.y,colv.z});
-     try{p->SetTransparency(std::stof(f[6]));p->SetAnchored(std::stoi(f[7])!=0);p->SetCanCollide(std::stoi(f[8])!=0);}catch(...){error="invalid BasePart property";return nullptr;}
-     float qx,qy,qz,qw;if(f.size()>=10&&Parse4(f[9],qx,qy,qz,qw)){auto cf=p->CFrameValue();cf.rotation={qx,qy,qz,qw};p->SetCFrame(cf);}
-    }
+    if(f.size()<17){error="incomplete BasePart record";return nullptr;}
+    Vector3 pos,size,colv;if(!Parse3(f[5],pos)||!Parse3(f[6],size)||!Parse3(f[7],colv)){error="invalid BasePart vector";return nullptr;}
+    try{p->SetPosition(pos);p->SetSize(size);p->SetColor({colv.x,colv.y,colv.z});p->SetTransparency(std::stof(f[8]));p->SetAnchored(std::stoi(f[9])!=0);p->SetCanCollide(std::stoi(f[10])!=0);p->SetCanTouch(std::stoi(f[11])!=0);p->SetCanQuery(std::stoi(f[12])!=0);p->SetMass(std::stof(f[13]));p->SetShape(static_cast<PartShape>(std::stoi(f[14])));float qx,qy,qz,qw;if(!Parse4(f[15],qx,qy,qz,qw)){error="invalid quaternion";return nullptr;}auto cf=p->CFrameValue();cf.rotation={qx,qy,qz,qw};p->SetCFrame(cf);}catch(...){error="invalid BasePart property";return nullptr;}attrIndex=16;
+   }else if(auto*script=dynamic_cast<Script*>(obj.get())){if(f.size()<6){error="missing script source";return nullptr;}script->SetSource(Unhex(f[5]));attrIndex=6;}
+   if(attrIndex>=f.size()){error="missing attribute count";return nullptr;}
+   std::size_t count=0;try{count=std::stoul(f[attrIndex]);}catch(...){error="invalid attribute count";return nullptr;}++attrIndex;
+   for(std::size_t n=0;n<count;++n){
+    if(attrIndex+3>=f.size()){error="truncated attribute";return nullptr;}
+    std::string key=Unhex(f[attrIndex++]),type=f[attrIndex++],value=f[attrIndex++];
+    if(type=="b")obj->SetAttribute(key,value=="1");else if(type=="d")try{obj->SetAttribute(key,std::stod(value));}catch(...){error="invalid attribute number";return nullptr;}else if(type=="s")obj->SetAttribute(key,Unhex(value));else if(type!="n"){error="invalid attribute type";return nullptr;}
    }
-   if(auto*script=dynamic_cast<Script*>(obj.get())){
-    if(f.size()>=4)script->SetSource(Unhex(f[3]));
-   }
-   Instance*parent=depth==0?dm.get():stack[depth-1];
-   if(!parent){error="missing scene parent";return nullptr;}
+   Instance*parent=depth==0?dm.get():stack[depth-1];if(!parent){error="missing scene parent";return nullptr;}
    Instance*raw=Instance::SetParent(std::move(obj),parent);if(!raw){error="failed to attach instance";return nullptr;}
    if(depth<int(stack.size()))stack.resize(depth);stack.push_back(raw);
   }
   return dm;
  }
  static std::string Save(const DataModel&g){std::ostringstream o;o<<"RSM_SCENE 2\n";Write(g,o,0);return o.str();}
- static bool Valid(const std::string&s){return s.rfind("RSM_SCENE 2\n",0)==0||s.rfind("RSM_SCENE 1\n",0)==0;}
+ static bool Valid(const std::string&s){return s.rfind("RSM_SCENE 2\n",0)==0;}
 };
 }
