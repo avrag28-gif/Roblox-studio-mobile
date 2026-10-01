@@ -82,6 +82,13 @@ class TransformController(private val runtime: CoreRuntime) {
         }
     }
 
+    fun applyScreenDelta(instances: Collection<Instance>, dx: Float, dy: Float): Boolean {
+        val targets = instances.filter { it.className == "Part" }
+        if (targets.isEmpty()) return false
+        targets.forEach { applyScreenDelta(it, dx, dy) }
+        return true
+    }
+
     fun applyScreenDelta(instance: Instance, dx: Float, dy: Float): Boolean {
         if (instance.className != "Part") return false
         return when (tool) {
