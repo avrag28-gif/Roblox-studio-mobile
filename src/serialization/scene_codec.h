@@ -18,7 +18,7 @@ class SceneCodec {
  static int ShapeCode(PartShape s){return static_cast<int>(s);} static int MaterialCode(Material m){return static_cast<int>(m);}
  static void Write(const Instance&i,std::ostream&o,int depth){
   o<<depth<<'|'<<Hex(i.ClassName())<<'|'<<Hex(i.Name())<<'|'<<Hex(i.Id())<<'|'<<i.Archivable();
-  if(auto*p=dynamic_cast<const BasePart*>(&i)){
+  if(auto*m=dynamic_cast<const Model*>(&i)){\n   auto pos=m->Pivot().position,q=m->Pivot().rotation;\n   o<<"|M|"<<V3(pos.x,pos.y,pos.z)<<'|'<<q.x<<','<<q.y<<','<<q.z<<','<<q.w;\n  }\n  if(auto*p=dynamic_cast<const BasePart*>(&i)){
    auto pos=p->Position(),size=p->Size(),col=p->Color(),q=p->CFrameValue().rotation;
    o<<'|'<<V3(pos.x,pos.y,pos.z)<<'|'<<V3(size.x,size.y,size.z)<<'|'<<V3(col.r,col.g,col.b)
     <<'|'<<p->Transparency()<<'|'<<p->Anchored()<<'|'<<p->CanCollide()<<'|'<<p->CanTouch()<<'|'<<p->CanQuery()<<'|'<<p->Mass()<<'|'<<ShapeCode(p->Shape())<<'|'<<MaterialCode(p->MaterialValue())
@@ -84,7 +84,7 @@ public:
     if(f.size()<18){error="incomplete BasePart record";return nullptr;}
     Vector3 pos,size,colv;if(!Parse3(f[5],pos)||!Parse3(f[6],size)||!Parse3(f[7],colv)){error="invalid BasePart vector";return nullptr;}
     try{p->SetPosition(pos);p->SetSize(size);p->SetColor({colv.x,colv.y,colv.z});p->SetTransparency(std::stof(f[8]));p->SetAnchored(std::stoi(f[9])!=0);p->SetCanCollide(std::stoi(f[10])!=0);p->SetCanTouch(std::stoi(f[11])!=0);p->SetCanQuery(std::stoi(f[12])!=0);p->SetMass(std::stof(f[13]));p->SetShape(static_cast<PartShape>(std::stoi(f[14])));p->SetMaterial(static_cast<Material>(std::stoi(f[15])));float qx,qy,qz,qw;if(!Parse4(f[16],qx,qy,qz,qw)){error="invalid quaternion";return nullptr;}auto cf=p->CFrameValue();cf.rotation={qx,qy,qz,qw};p->SetCFrame(cf);}catch(...){error="invalid BasePart property";return nullptr;}attrIndex=17;
-   }else if(auto*script=dynamic_cast<Script*>(obj.get())){if(f.size()<6){error="missing script source";return nullptr;}script->SetSource(Unhex(f[5]));attrIndex=6;}
+   }else if(auto*model=dynamic_cast<Model*>(obj.get())){\n    if(f.size()>=8&&f[5]=="M"){Vector3 pos;float qx,qy,qz,qw;if(!Parse3(f[6],pos)||!Parse4(f[7],qx,qy,qz,qw)){error="invalid Model pivot";return nullptr;}model->SetPivot(CFrame(pos,{qx,qy,qz,qw}));attrIndex=8;}\n   }else if(auto*script=dynamic_cast<Script*>(obj.get())){if(f.size()<6){error="missing script source";return nullptr;}script->SetSource(Unhex(f[5]));attrIndex=6;}
    if(attrIndex>=f.size()){error="missing attribute count";return nullptr;}
    std::size_t count=0;try{count=std::stoul(f[attrIndex]);}catch(...){error="invalid attribute count";return nullptr;}++attrIndex;
    for(std::size_t n=0;n<count;++n){
