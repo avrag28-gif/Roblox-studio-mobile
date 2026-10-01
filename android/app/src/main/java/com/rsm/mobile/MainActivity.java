@@ -117,8 +117,8 @@ static class Obj {
     return bar;
   }
 
-  void addPart(){Obj o=new Obj("Part");o.x=objects.size()*2-2;o.y=1;objects.add(o);nativeCreateInstance(o.id,o.name,o.type,o.parent);select(o);dirty=true;append("INFO","Created Part");}
-  void addModel(){Obj o=new Obj("Model");o.type="Model";o.sx=o.sy=o.sz=4;o.y=2;o.color=Color.rgb(190,100,220);objects.add(o);nativeCreateInstance(o.id,o.name,o.type,o.parent);syncNativeScene();select(o);dirty=true;append("INFO","Created Model");}
+  void addPart(){Obj o=new Obj("Part");o.x=objects.size()*2-2;o.y=1;objects.add(o);if(nativeCreateInstance(o.id,o.name,o.type,o.parent)){nativeSetProperty(o.id,"PositionX",o.x);nativeSetProperty(o.id,"PositionY",o.y);nativeSetProperty(o.id,"PositionZ",o.z);nativeSetProperty(o.id,"SizeX",o.sx);nativeSetProperty(o.id,"SizeY",o.sy);nativeSetProperty(o.id,"SizeZ",o.sz);nativeSetProperty(o.id,"Anchored",1);nativeSetProperty(o.id,"CanCollide",1);}refreshNativeScene();applyNativeSceneToEditor();select(find(o.id));dirty=true;append("INFO","Created Part");}
+  void addModel(){Obj o=new Obj("Model");o.type="Model";o.sx=o.sy=o.sz=4;o.y=2;o.color=Color.rgb(190,100,220);objects.add(o);if(nativeCreateInstance(o.id,o.name,o.type,o.parent)){refreshNativeScene();applyNativeSceneToEditor();}select(find(o.id));dirty=true;append("INFO","Created Model");}
   void togglePlay(Button b){
     playing=!playing;b.setText(playing?"■  Stop":"▶  Play");nativeSetPlaying(playing);status.setText(playing?"●  PLAY   •   runtime scene active":"●  EDIT   •   "+objects.size()+" objects   •   Ready");
     append("INFO",playing?"Play session started from isolated runtime snapshot.":"Play session stopped; editor scene preserved.");viewport.invalidate();
