@@ -78,6 +78,33 @@ extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeSyncSce
  }
 }
 
+extern "C" JNIEXPORT jstring JNICALL Java_com_rsm_mobile_MainActivity_nativeGetSceneSnapshot(JNIEnv* env,jclass){
+ std::lock_guard<std::mutex> lock(engineMutex);
+ std::string out="[";
+ bool first=true;
+ std::unordered_map<const rsm::Instance*,std::string> ids;
+ for(const auto& e:editorIndex)ids[e.second]=e.first;
+ for(auto* x:workspace?workspace->GetDescendants():std::vector<rsm::Instance*>{}){
+  if(!first)out+=","; first=false;
+  auto esc=[](const std::string&s){std::string r;for(char c:s){if(c=='\\'||c=='"')r+='\\';r+=c;}return r;};
+  std::string id=ids.count(x)?ids[x]:std::to_string(reinterpret_cast<std::uintptr_t>(x));
+  std::string parent="";
+  if(x->Parent()&&ids.count(x->Parent()))parent=ids[x->Parent()];
+  out+="{\"id\":\""+esc(id)+"\",\"name\":\""+esc(x->Name())+"\",\"type\":\""+esc(x->ClassName())+"\",\"parent\":\""+esc(parent)+"\"";
+  if(auto*part=dynamic_cast<rsm::BasePart*>(x)){
+   auto p=part->Position(),s=part->Size(),c=part->Color(),q=part->CFrameValue().rotation;
+   out+=",\"position\":["+std::to_string(p.x)+","+std::to_string(p.y)+","+std::to_string(p.z)+"]";
+   out+=",\"size\":["+std::to_string(s.x)+","+std::to_string(s.y)+","+std::to_string(s.z)+"]";
+   out+=",\"rotation\":["+std::to_string(q.x)+","+std::to_string(q.y)+","+std::to_string(q.z)+","+std::to_string(q.w)+"]";
+   out+=",\"color\":["+std::to_string(c.r)+","+std::to_string(c.g)+","+std::to_string(c.b)+"]";
+   out+=",\"anchored\":"+(part->Anchored()?"true":"false")+",\"canCollide\":"+(part->CanCollide()?"true":"false");
+  }
+  out+="}";
+ }
+ out+="]";
+ return env->NewStringUTF(out.c_str());
+}
+
 extern "C" JNIEXPORT jint JNICALL Java_com_rsm_mobile_MainActivity_nativeRaycast(JNIEnv*,jclass,jfloat x,jfloat y,jfloat w,jfloat h){
  if(!workspace||w<=0||h<=0)return -1;
  auto hit=rsm::PhysicsWorld().Raycast(game,camera.ScreenRay(x,y,w,h)); if(!hit.part)return -1;
