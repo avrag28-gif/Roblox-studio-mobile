@@ -27,6 +27,7 @@ class StudioScreen(private val context:Context,private val runtime:CoreRuntime){
   toolbar.addView(Button(context).apply{text="Rotate";setOnClickListener{transform.tool=TransformTool.Rotate; surfaceRef?.setTransformTool(transform.tool)}} ,LinearLayout.LayoutParams(0,52,1f))
   toolbar.addView(Button(context).apply{text="Select";setOnClickListener{transform.tool=TransformTool.Select; surfaceRef?.setTransformTool(transform.tool)}},LinearLayout.LayoutParams(0,52,1f))
   toolbar.addView(Button(context).apply{text="Multi";setOnClickListener{multiSelect=!multiSelect;text=if(multiSelect)"Multi*" else "Multi"}} ,LinearLayout.LayoutParams(0,52,1f))
+  toolbar.addView(Button(context).apply{text="Snap";setOnClickListener{transform.snapEnabled=!transform.snapEnabled;text=if(transform.snapEnabled)"Snap*" else "Snap"}} ,LinearLayout.LayoutParams(0,52,1f))
   toolbar.addView(Button(context).apply{text="Delete";setOnClickListener{runtime.selection.get().toList().forEach{controller.delete(it)};selected=null;refresh()}},LinearLayout.LayoutParams(0,52,1f))
   root.addView(toolbar,LinearLayout.LayoutParams(-1,60))
   val body=LinearLayout(context).apply{orientation=LinearLayout.HORIZONTAL}
