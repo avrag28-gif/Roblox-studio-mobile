@@ -162,11 +162,6 @@ public:
    if(!topLevel)continue;
    auto b=CaptureTransform(*i);before.insert(before.end(),b.begin(),b.end());
   }
-  for(auto*i:targets){
-   if(!i)continue;
-   const bool topLevel=std::none_of(targets.begin(),targets.end(),[i](Instance*x){if(!x||x==i)return false;for(auto*p=x->Parent();p;p=p->Parent())if(p==i)return true;return false;});
-   (void)i;
-  }
   std::vector<Instance*> group;
   for(auto*i:targets)if(i){
    const bool topLevel=std::none_of(targets.begin(),targets.end(),[i](Instance*x){if(!x||x==i)return false;for(auto*p=x->Parent();p;p=p->Parent())if(p==i)return true;return false;});
@@ -180,7 +175,6 @@ public:
  bool Undo(){
   const bool ok=history_.UndoAny([this](const std::string&id,const std::string&p,double v){return ApplyTransformValue(id,p,v);},{},[this](const ChangeHistory::Command&c){
    if(c.property=="__TRANSFORM__")return ApplyTransformSnapshot(c,true);
-   if(c.property=="__TRANSFORM__")return ApplyTransformSnapshot(c,false);
    if(c.property!="__STRUCTURE__")return false;
    std::stringstream ss(c.payload);std::string oldParent,newParent,id;
    if(!std::getline(ss,oldParent,'|')||!std::getline(ss,newParent,'|')||!std::getline(ss,id,'|'))return false;
@@ -191,6 +185,7 @@ public:
  }
  bool Redo(){
   const bool ok=history_.RedoAny([this](const std::string&id,const std::string&p,double v){return ApplyTransformValue(id,p,v);},{},[this](const ChangeHistory::Command&c){
+   if(c.property=="__TRANSFORM__")return ApplyTransformSnapshot(c,false);
    if(c.property!="__STRUCTURE__")return false;
    std::stringstream ss(c.payload);std::string oldParent,newParent,id;
    if(!std::getline(ss,oldParent,'|')||!std::getline(ss,newParent,'|')||!std::getline(ss,id,'|'))return false;
