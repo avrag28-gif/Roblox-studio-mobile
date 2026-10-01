@@ -34,7 +34,7 @@ inline Vector3 ModelWorldAabbSize(const Model& model) {
             0.5f * (std::fabs(axy)*s.x + std::fabs(ayy)*s.y + std::fabs(azy)*s.z),
             0.5f * (std::fabs(axz)*s.x + std::fabs(ayz)*s.y + std::fabs(azz)*s.z)
         };
-        const auto& p = part->Position();
+        const auto p = WorldPosition(*part);
         const Vector3 lo{p.x-half.x, p.y-half.y, p.z-half.z};
         const Vector3 hi{p.x+half.x, p.y+half.y, p.z+half.z};
 
