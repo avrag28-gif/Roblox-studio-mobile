@@ -43,7 +43,7 @@ class Model:public Instance{
 public:
  Model():Instance("Model"){}
  const CFrame&Pivot()const{return pivot_;}
- void SetPivot(CFrame v){pivot_=v;PropertyChanged.Fire("Pivot");PropertyChanged.Fire("CFrame");}
+ void SetPivot(CFrame v){v.rotation=v.rotation.Normalized();pivot_=v;PropertyChanged.Fire("Pivot");PropertyChanged.Fire("CFrame");}
  std::unique_ptr<Instance>Clone()const override{auto c=std::make_unique<Model>();CopyStateTo(*c);c->pivot_=pivot_;CloneChildrenTo(*c);return c;}
 private:CFrame pivot_{};
 };
