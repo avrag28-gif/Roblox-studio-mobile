@@ -62,7 +62,7 @@ public:
   if(targets.empty())return;
   Vector3 pivot{};size_t count=0;
   for(auto*i:targets)if(i){pivot+=WorldPosition(*i);++count;}
-  if(!count)return;pivot=pivot/static_cast<float>(count);
+  if(!count)return;pivot=pivot*(1.0f/static_cast<float>(count));
   Vector3 d=delta;
   if(axis_==GizmoAxis::X)d={delta.x,0,0};else if(axis_==GizmoAxis::Y)d={0,delta.y,0};else if(axis_==GizmoAxis::Z)d={0,0,delta.z};
   if(mode_==GizmoMode::Move){
@@ -70,7 +70,7 @@ public:
     if(auto*i=targets.front())d=WorldRotation(*i).Rotate(d);
    }
    pivot+=d;pivot.x=SnapScalar(pivot.x,snap_.move,snap_.enabled);pivot.y=SnapScalar(pivot.y,snap_.move,snap_.enabled);pivot.z=SnapScalar(pivot.z,snap_.move,snap_.enabled);
-   const Vector3 applied=pivot-(std::accumulate(targets.begin(),targets.end(),Vector3{},[](Vector3 a,Instance*i){return i?a+WorldPosition(*i):a;})/static_cast<float>(count));
+   const Vector3 applied=pivot-(std::accumulate(targets.begin(),targets.end(),Vector3{},[](Vector3 a,Instance*i){return i?a+WorldPosition(*i):a;})*(1.0f/static_cast<float>(count)));
    for(auto*i:targets)if(i)SetWorldCFrame(*i,CFrame(WorldPosition(*i)+applied,WorldRotation(*i)));
   }else if(mode_==GizmoMode::Rotate){
    float degrees=axis_==GizmoAxis::X?delta.x:(axis_==GizmoAxis::Y?delta.y:delta.z);
