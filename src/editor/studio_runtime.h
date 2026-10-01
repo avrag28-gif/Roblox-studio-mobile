@@ -15,6 +15,8 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <cmath>
+#include <algorithm>
 
 namespace rsm {
 
