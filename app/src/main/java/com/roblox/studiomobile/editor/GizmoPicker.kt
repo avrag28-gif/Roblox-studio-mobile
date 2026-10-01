@@ -6,6 +6,24 @@ import kotlin.math.sqrt
 enum class GizmoAxis { X, Y, Z, None }
 
 class GizmoPicker {
+    fun axisParameter(ray: Ray, origin: Vec3, axis: GizmoAxis): Float? {
+        val v = when (axis) {
+            GizmoAxis.X -> Vec3(1f, 0f, 0f)
+            GizmoAxis.Y -> Vec3(0f, 1f, 0f)
+            GizmoAxis.Z -> Vec3(0f, 0f, 1f)
+            GizmoAxis.None -> return null
+        }
+        val d = ray.direction
+        val r = ray.origin - origin
+        val a = dot(d, d)
+        val b = dot(d, v)
+        val c = dot(v, v)
+        val e = dot(v, r)
+        val f = dot(d, r)
+        val denom = a * c - b * b
+        return if (denom < 0.000001f) e / c else (a * e - b * f) / denom
+    }
+
     fun pick(ray: Ray, origin: Vec3, length: Float): GizmoAxis {
         val axes = listOf(
             GizmoAxis.X to Vec3(1f, 0f, 0f),
