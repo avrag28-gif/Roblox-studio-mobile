@@ -1,5 +1,8 @@
 #include "../src/math/math3d.h"
 #include "../src/math/cframe.h"
+#include "../src/core/base_part.h"
+#include "../src/core/class_system.h"
+#include "../src/core/transform_hierarchy.h"
 #include <cassert>
 #include <cmath>
 using namespace rsm;
@@ -11,5 +14,27 @@ int main(){
  auto local=parent.Inverse()*world; assert(near(local.position.x,2)); assert(near(local.position.y,0)); assert(near(local.position.z,0));
  auto pworld=parent.PointToWorldSpace({0,0,-2}); assert(near(pworld.x,8)); assert(near(pworld.z,0));
  auto back=parent.PointToObjectSpace(pworld); assert(near(back.x,0)); assert(near(back.z,-2));
+
+ Model model;
+ model.SetPivot(CFrame({5,0,0}));
+ auto part=std::make_unique<Part>();
+ part->SetCFrame(CFrame({7,0,0}));
+ auto*partRaw=part.get();
+ Instance::SetParent(std::move(part),&model);
+ ApplyModelWorldPivot(model,CFrame({10,0,0}));
+ assert(near(model.Pivot().position.x,10));
+ assert(near(partRaw->Position().x,12));
+
+ auto nested=std::make_unique<Model>();
+ nested->SetPivot(CFrame({12,0,0}));
+ auto*nestedRaw=nested.get();
+ Instance::SetParent(std::move(nested),&model);
+ auto nestedPart=std::make_unique<Part>();
+ nestedPart->SetPosition({13,0,0});
+ auto*nestedPartRaw=nestedPart.get();
+ Instance::SetParent(std::move(nestedPart),nestedRaw);
+ ApplyModelWorldPivot(model,CFrame({8,0,0}));
+ assert(near(nestedRaw->Pivot().position.x,10));
+ assert(near(nestedPartRaw->Position().x,11));
  return 0;
 }
