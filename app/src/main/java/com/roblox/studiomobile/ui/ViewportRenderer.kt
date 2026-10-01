@@ -3,6 +3,7 @@ package com.roblox.studiomobile.ui
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import com.roblox.studiomobile.editor.SceneGraph
+import com.roblox.studiomobile.editor.Vec3
 import com.roblox.studiomobile.editor.ViewportCamera
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -40,12 +41,22 @@ class ViewportRenderer(private val graph: SceneGraph, private val camera: Viewpo
         val aspect = width.toFloat() / height.toFloat()
         val projection = perspective(60f, aspect, 0.1f, 500f)
         val view = lookAt(camera.position().x, camera.position().y, camera.position().z, camera.target.x, camera.target.y, camera.target.z)
-        val mvp = multiply(projection, view)
-        GLES20.glUniformMatrix4fv(mvpHandle, 1, false, mvp, 0)
-        cube.position(0)
         GLES20.glEnableVertexAttribArray(positionHandle)
         GLES20.glVertexAttribPointer(positionHandle, 3, GLES20.GL_FLOAT, false, 12, cube)
-        GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, CUBE.size / 3)
+        val parts = graph.renderable()
+        if (parts.isEmpty()) {
+            drawCube(multiply(projection, view))
+        } else {
+            parts.forEach { node ->
+                val position = node.transform.position
+                val size = node.transform.scale
+                val model = translation(position.x, position.y, position.z)
+                val scaled = multiply(model, scale(size.x, size.y, size.z))
+                GLES20.glUniformMatrix4fv(mvpHandle, 1, false, multiply(multiply(projection, view), scaled), 0)
+                cube.position(0)
+                GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, CUBE.size / 3)
+            }
+        }
         GLES20.glDisableVertexAttribArray(positionHandle)
     }
 
@@ -83,6 +94,18 @@ class ViewportRenderer(private val graph: SceneGraph, private val camera: Viewpo
         val ux=ry*nz-rz*ny; val uy=rz*nx-rx*nz; val uz=rx*ny-ry*nx
         return floatArrayOf(rx,ux,-nx,0f, ry,uy,-ny,0f, rz,uz,-nz,0f, -(rx*ex+ry*ey+rz*ez), -(ux*ex+uy*ey+uz*ez), nx*ex+ny*ey+nz*ez,1f)
     }
+
+    private fun drawCube(mvp: FloatArray) {
+        GLES20.glUniformMatrix4fv(mvpHandle, 1, false, mvp, 0)
+        cube.position(0)
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, CUBE.size / 3)
+    }
+
+    private fun translation(x: Float, y: Float, z: Float): FloatArray =
+        floatArrayOf(1f,0f,0f,0f, 0f,1f,0f,0f, 0f,0f,1f,0f, x,y,z,1f)
+
+    private fun scale(x: Float, y: Float, z: Float): FloatArray =
+        floatArrayOf(x,0f,0f,0f, 0f,y,0f,0f, 0f,0f,z,0f, 0f,0f,0f,1f)
 
     private fun multiply(a: FloatArray, b: FloatArray): FloatArray {
         val r=FloatArray(16)
