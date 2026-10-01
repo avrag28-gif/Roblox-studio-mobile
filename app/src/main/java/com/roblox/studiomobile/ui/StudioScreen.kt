@@ -7,7 +7,8 @@ import com.roblox.studiomobile.core.*
 import com.roblox.studiomobile.editor.*
 class StudioScreen(private val context:Context,private val runtime:CoreRuntime){
  private val explorer=ExplorerModel(runtime.dataModel)
- private val controller=ExplorerController(runtime)\n private val scene=SceneSynchronizer(runtime)
+ private val controller=ExplorerController(runtime)
+ private val scene=SceneSynchronizer(runtime)
  private val list=LinearLayout(context).apply{orientation=LinearLayout.VERTICAL}
  private val properties=LinearLayout(context).apply{orientation=LinearLayout.VERTICAL}
  private var selected:Instance?=null
@@ -22,7 +23,7 @@ class StudioScreen(private val context:Context,private val runtime:CoreRuntime){
   root.addView(toolbar,LinearLayout.LayoutParams(-1,60))
   val body=LinearLayout(context).apply{orientation=LinearLayout.HORIZONTAL}
   body.addView(explorerView(),LinearLayout.LayoutParams(0,-1,0.30f))
-  body.addView(TextView(context).apply{text="3D VIEWPORT\n\nSceneGraph pending";gravity=Gravity.CENTER;textSize=18f;setTextColor(Color.LTGRAY)},LinearLayout.LayoutParams(0,-1,0.45f))
+  body.addView(viewport(),LinearLayout.LayoutParams(0,-1,0.45f))
   body.addView(propertyView(),LinearLayout.LayoutParams(0,-1,0.25f))
   root.addView(body,LinearLayout.LayoutParams(-1,0,1f))
   return root
