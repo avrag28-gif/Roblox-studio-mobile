@@ -180,7 +180,7 @@ static class Obj {
     section("TRANSFORM");
     row3("Position",selected.x,selected.y,selected.z,(a,b,c)->{selected.x=a;selected.y=b;selected.z=c;changed();});
     row3("Rotation",(float)Math.toDegrees(selected.rx),(float)Math.toDegrees(selected.ry),(float)Math.toDegrees(selected.rz),(a,b,c)->{selected.rx=(float)Math.toRadians(a);selected.ry=(float)Math.toRadians(b);selected.rz=(float)Math.toRadians(c);changed();});
-    row3("Size",selected.sx,selected.sy,selected.sz,(a,b,c)->{selected.sx=Math.max(.1f,a);selected.sy=Math.max(.1f,b);selected.sz=Math.max(.1f,c);changed();});
+    if(!"Model".equals(selected.type)) row3("Size",selected.sx,selected.sy,selected.sz,(a,b,c)->{selected.sx=Math.max(.1f,a);selected.sy=Math.max(.1f,b);selected.sz=Math.max(.1f,c);changed();}); else props.addView(text("Extents  •  world-space AABB",11));
     section("APPEARANCE");
     EditText nameEdit=edit(selected.name);nameEdit.setHint("Name");nameEdit.setOnFocusChangeListener((v,has)->{if(!has&&selected!=null&&!nameEdit.getText().toString().trim().isEmpty()){selected.name=nameEdit.getText().toString().trim();nativeSetName(selected.id,selected.name);changed();}});props.addView(labelRow("Name",nameEdit));
     Button color=btn("Color   "+selected.color);color.setOnClickListener(v->cycleColor());props.addView(color);
