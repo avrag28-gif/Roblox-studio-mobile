@@ -108,7 +108,7 @@ static class Obj {
     Button add=btn("+ Part");add.setOnClickListener(v->addPart());bar.addView(add);
     Button model=btn("+ Model");model.setOnClickListener(v->addModel());bar.addView(model);
     Button play=btn("▶  Play");play.setOnClickListener(v->togglePlay(play));bar.addView(play);
-    Button save=btn("Save");save.setOnClickListener(v->saveProject());bar.addView(save);
+    Button save=btn("Save");save.setOnClickListener(v->saveProject());bar.addView(save); Button undo=btn("Undo");undo.setOnClickListener(v->{if(nativeUndo()){pullNative();append("INFO","Undo");}});bar.addView(undo); Button redo=btn("Redo");redo.setOnClickListener(v->{if(nativeRedo()){pullNative();append("INFO","Redo");}});bar.addView(redo);
     Button load=btn("Open");load.setOnClickListener(v->loadProject());bar.addView(load);
     Button move=btn("Move");move.setOnClickListener(v->{mode=Mode.MOVE;viewport.invalidate();});bar.addView(move);
     Button rotate=btn("Rotate");rotate.setOnClickListener(v->{mode=Mode.ROTATE;viewport.invalidate();});bar.addView(rotate);
@@ -124,7 +124,8 @@ static class Obj {
     append("INFO",playing?"Play session started from isolated runtime snapshot.":"Play session stopped; editor scene preserved.");viewport.invalidate();
   }
 
-  void refresh(){syncNativeScene();refreshNativeScene();applyNativeSceneToEditor();refreshExplorer();refreshProps();viewport.invalidate();status.setText((playing?"●  PLAY":"●  EDIT")+"   •   "+objects.size()+" objects"+(dirty?"   •   Unsaved":"   •   Saved"));}
+  void refresh(){syncNativeScene();pullNative();refreshExplorer();refreshProps();viewport.invalidate();status.setText((playing?"●  PLAY":"●  EDIT")+"   •   "+objects.size()+" objects"+(dirty?"   •   Unsaved":"   •   Saved"));}
+  void pullNative(){refreshNativeScene();applyNativeSceneToEditor();refreshExplorer();refreshProps();viewport.invalidate();}
   void applyNativeSceneToEditor(){
     String keep=selected==null?null:selected.id; ArrayList<Obj> next=new ArrayList<>();
     for(NativeObj n:nativeScene){Obj o=new Obj(n.name);o.id=n.id;o.type=n.type;o.parent=n.parent;o.x=n.x;o.y=n.y;o.z=n.z;o.sx=n.sx;o.sy=n.sy;o.sz=n.sz;o.rx=n.rx;o.ry=n.ry;o.rz=n.rz;o.color=n.color;o.anchored=n.anchored;o.collide=n.collide;next.add(o);}
@@ -150,6 +151,8 @@ static class Obj {
   static native String nativeDuplicateInstance(String id);
   static native boolean nativeSetParent(String id,String parentId);
   static native boolean nativeSetProperty(String id,String property,double value);
+  static native boolean nativeUndo();
+  static native boolean nativeRedo();
   void refreshExplorer(){
     explorer.removeAllViews();
     TextView h=text("EXPLORER",13);h.setTypeface(Typeface.DEFAULT,Typeface.BOLD);explorer.addView(h,new LinearLayout.LayoutParams(-1,dp(46)));
