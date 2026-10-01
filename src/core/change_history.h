@@ -61,7 +61,7 @@ public:
  bool Undo(const ApplyFn&apply){
   if(!CanUndo())return false;
   const auto&c=commands_[cursor_-1];
-  if(!UndoCommand(c,apply,{}))return false;
+  if(!UndoCommand(c,apply,{},{}))return false;
   --cursor_;
   return true;
  }
@@ -95,7 +95,7 @@ public:
  bool Redo(const ApplyFn&apply){
   if(!CanRedo())return false;
   const auto&c=commands_[cursor_];
-  if(!RedoCommand(c,apply,{}))return false;
+  if(!RedoCommand(c,apply,{},{}))return false;
   ++cursor_;
   return true;
  }
@@ -122,7 +122,7 @@ private:
   return apply?apply(c.id,c.property,c.before):false;
  }
 
- static bool RedoCommand(const Command&c,const ApplyFn&apply,const std::function<bool(const Command&)>&structuralApply){
+ static bool RedoCommand(const Command&c,const ApplyFn&apply,const ApplyStringFn&applyString,const std::function<bool(const Command&)>&structuralApply){
   if(c.compound){
    for(const auto&child:c.children)
     if(!RedoCommand(child,apply,applyString,structuralApply))return false;
