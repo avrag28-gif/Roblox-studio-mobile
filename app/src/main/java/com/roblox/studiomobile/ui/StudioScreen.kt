@@ -37,6 +37,8 @@ class StudioScreen(private val context:Context,private val runtime:CoreRuntime){
   val camera=ViewportCamera()
   val surface=ViewportSurface(context,scene.graph,camera)
   surface.onPicked={select(it)}
+  surface.onTransformGestureStart={transform.beginGesture()}
+  surface.onTransformGestureEnd={commit->transform.endGesture(commit)}
   surface.onTransformDrag={dx,dy->selected?.let{transform.applyScreenDelta(it,dx,dy)} ?: false}
   frame.addView(surface,FrameLayout.LayoutParams(-1,-1))
   return frame
