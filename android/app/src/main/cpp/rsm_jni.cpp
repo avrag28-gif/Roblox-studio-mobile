@@ -78,6 +78,21 @@ extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeSyncSce
  }
 }
 
+extern "C" JNIEXPORT jboolean JNICALL Java_com_rsm_mobile_MainActivity_nativeCreateInstance(JNIEnv* env,jclass,jstring id,jstring name,jstring type,jstring parentId){
+ std::lock_guard<std::mutex> lock(engineMutex); if(!workspace)return JNI_FALSE;
+ const char* sid=env->GetStringUTFChars(id,nullptr),*sn=env->GetStringUTFChars(name,nullptr),*st=env->GetStringUTFChars(type,nullptr),*sp=env->GetStringUTFChars(parentId,nullptr);
+ std::string cls=st?st:"Part";auto p=rsm::InstanceFactory::New(cls);if(!p)p=rsm::InstanceFactory::New("Part");if(sn)p->SetName(sn);
+ rsm::Instance*parent=workspace;auto pi=editorIndex.find(sp?sp:"");if(pi!=editorIndex.end())parent=pi->second;
+ rsm::Instance*raw=p.get();rsm::Instance::SetParent(std::move(p),parent);if(sid)editorIndex[sid]=raw;
+ if(sid)env->ReleaseStringUTFChars(id,sid);if(sn)env->ReleaseStringUTFChars(name,sn);if(st)env->ReleaseStringUTFChars(type,st);if(sp)env->ReleaseStringUTFChars(parentId,sp);return JNI_TRUE;
+}
+extern "C" JNIEXPORT jboolean JNICALL Java_com_rsm_mobile_MainActivity_nativeDeleteInstance(JNIEnv* env,jclass,jstring id){
+ std::lock_guard<std::mutex> lock(engineMutex);const char*sid=env->GetStringUTFChars(id,nullptr);auto it=editorIndex.find(sid?sid:"");bool ok=it!=editorIndex.end()&&it->second!=workspace;if(ok){it->second->Destroy();editorIndex.erase(it);}if(sid)env->ReleaseStringUTFChars(id,sid);return ok?JNI_TRUE:JNI_FALSE;
+}
+extern "C" JNIEXPORT jboolean JNICALL Java_com_rsm_mobile_MainActivity_nativeSetParent(JNIEnv* env,jclass,jstring id,jstring parentId){
+ std::lock_guard<std::mutex> lock(engineMutex);const char*sid=env->GetStringUTFChars(id,nullptr),*sp=env->GetStringUTFChars(parentId,nullptr);auto a=editorIndex.find(sid?sid:""),b=editorIndex.find(sp?sp:"");bool ok=a!=editorIndex.end()&&b!=editorIndex.end()&&a->second!=b->second;if(ok)a->second->SetParent(b->second);if(sid)env->ReleaseStringUTFChars(id,sid);if(sp)env->ReleaseStringUTFChars(parentId,sp);return ok?JNI_TRUE:JNI_FALSE;
+}
+
 extern "C" JNIEXPORT jstring JNICALL Java_com_rsm_mobile_MainActivity_nativeGetSceneSnapshot(JNIEnv* env,jclass){
  std::lock_guard<std::mutex> lock(engineMutex);
  std::string out="[";
