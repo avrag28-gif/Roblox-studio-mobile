@@ -17,14 +17,26 @@ class SceneCodec {
  static bool Parse3(const std::string&v,Vector3&out){std::stringstream q(v);char a,b;if(!(q>>out.x>>a>>out.y>>b>>out.z)||a!=','||b!=',')return false;return true;}
  static bool Parse4(const std::string&v,float&a,float&b,float&c,float&d){std::stringstream q(v);char x,y,z;if(!(q>>a>>x>>b>>y>>c>>z>>d)||x!=','||y!=','||z!=',')return false;return true;}
  static void Write(const Instance&i,std::ostream&o,int depth){
-  o<<depth<<'|'<<Hex(i.ClassName())<<'|'<<Hex(i.Name());
+  o<<depth<<'|'<<Hex(i.ClassName())<<'|'<<Hex(i.Name())<<'|'<<Hex(i.Id())<<'|'<<i.Archivable();
+  if(auto*m=dynamic_cast<const Model*>(&i)){
+   auto world=WorldCFrame(*m);auto pos=world.position,q=world.rotation;
+   o<<"|M|"<<V3(pos.x,pos.y,pos.z)<<'|'<<q.x<<','<<q.y<<','<<q.z<<','<<q.w;
+  }
   if(auto*p=dynamic_cast<const BasePart*>(&i)){
    auto world=WorldCFrame(*p);auto pos=world.position,size=p->Size(),col=p->Color(),q=world.rotation;
-   o<<'|'<<V3(pos.x,pos.y,pos.z)<<'|'<<V3(size.x,size.y,size.z)
-    <<'|'<<V3(col.r,col.g,col.b)<<'|'<<p->Transparency()<<'|'<<p->Anchored()<<'|'<<p->CanCollide()
+   o<<'|'<<V3(pos.x,pos.y,pos.z)<<'|'<<V3(size.x,size.y,size.z)<<'|'<<V3(col.r,col.g,col.b)
+    <<'|'<<p->Transparency()<<'|'<<p->Anchored()<<'|'<<p->CanCollide()<<'|'<<p->CanTouch()<<'|'<<p->CanQuery()<<'|'<<p->Mass()<<'|'<<ShapeCode(p->Shape())<<'|'<<MaterialCode(p->MaterialValue())
     <<'|'<<q.x<<','<<q.y<<','<<q.z<<','<<q.w;
   }
   if(auto*s=dynamic_cast<const Script*>(&i))o<<'|'<<Hex(s->Source());
+  o<<'|'<<i.Attributes().size();
+  for(const auto&a:i.Attributes()){
+   o<<'|'<<Hex(a.first);
+   if(std::holds_alternative<bool>(a.second))o<<"|b|"<<std::get<bool>(a.second);
+   else if(std::holds_alternative<double>(a.second))o<<"|d|"<<std::get<double>(a.second);
+   else if(std::holds_alternative<std::string>(a.second))o<<"|s|"<<Hex(std::get<std::string>(a.second));
+   else o<<"|n|";
+  }
   o<<'\n';
   for(auto*x:i.GetChildren())Write(*x,o,depth+1);
  }
