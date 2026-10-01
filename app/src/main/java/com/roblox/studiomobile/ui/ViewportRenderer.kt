@@ -97,6 +97,7 @@ class ViewportRenderer(
         }
 
         GLES20.glDisableVertexAttribArray(positionHandle)
+        drawGizmo(parts)
     }
 
     private fun drawGizmo(parts: List<com.roblox.studiomobile.editor.SceneNode>) {
@@ -121,7 +122,6 @@ class ViewportRenderer(
 
     private fun drawGizmoAxis(axis: Int, r: Float, g: Float, b: Float) {
         GLES20.glUniform4f(lineColorHandle, r, g, b, 1f)
-        cube.position(0)
         val offset = axis * 2
         gizmoLines.position(offset * 3)
         GLES20.glDrawArrays(GLES20.GL_LINES, 0, 2)
@@ -162,7 +162,8 @@ class ViewportRenderer(
     }
 
     companion object {
-        private val GIZMO_LINES = floatArrayOf(0f,0f,0f, 1f,0f,0f, 0f,0f,0f, 0f,1f,0f, 0f,0f,0f, 0f,0f,1f)\n        private val CUBE = floatArrayOf(
+        private val GIZMO_LINES = floatArrayOf(0f,0f,0f, 1f,0f,0f, 0f,0f,0f, 0f,1f,0f, 0f,0f,0f, 0f,0f,1f)
+        private val CUBE = floatArrayOf(
             -1f,-1f,1f, 1f,-1f,1f, 1f,1f,1f, -1f,-1f,1f, 1f,1f,1f, -1f,1f,1f,
             -1f,-1f,-1f, -1f,1f,-1f, 1f,1f,-1f, -1f,-1f,-1f, 1f,1f,-1f, 1f,-1f,-1f,
             -1f,1f,-1f, -1f,1f,1f, 1f,1f,1f, -1f,1f,-1f, 1f,1f,1f, 1f,1f,-1f,
