@@ -1,14 +1,43 @@
 #include "data_model.h"
 #include "class_system.h"
+#include <array>
 namespace rsm{
-DataModel::DataModel():Instance("DataModel"){SetName("game");InitializeDefaultServices();}
+
+DataModel::DataModel():Instance("DataModel"){
+ SetName("game");
+ InitializeDefaultServices();
+}
+
 void DataModel::InitializeDefaultServices(){
  if(!services_.empty())return;
- const char*n[]={"Workspace","Players","Lighting","ReplicatedStorage","ServerScriptService","ServerStorage","StarterGui","StarterPack","SoundService"};
- for(auto*s:n){auto x=std::make_unique<Service>(s);auto*r=x.get();AddChild(std::move(x));services_[s]=r;}
+ auto add=[this](std::unique_ptr<Instance> service){
+  auto*raw=service.get();
+  services_[raw->Name()]=raw;
+  Instance::SetParent(std::move(service),this);
+ };
+ add(std::make_unique<Workspace>());
+ add(std::make_unique<Players>());
+ add(std::make_unique<Lighting>());
+ add(std::make_unique<ReplicatedFirst>());
+ add(std::make_unique<ReplicatedStorage>());
+ add(std::make_unique<ServerScriptService>());
+ add(std::make_unique<ServerStorage>());
+ add(std::make_unique<StarterGui>());
+ add(std::make_unique<StarterPack>());
+ add(std::make_unique<StarterPlayer>());
+ add(std::make_unique<SoundService>());
 }
-Instance*DataModel::GetService(const std::string&n){auto i=services_.find(n);return i==services_.end()?nullptr:i->second;}
-const Instance*DataModel::GetService(const std::string&n)const{auto i=services_.find(n);return i==services_.end()?nullptr:i->second;}
+
+Instance*DataModel::GetService(const std::string&n){
+ InitializeDefaultServices();
+ auto i=services_.find(n);
+ return i==services_.end()?nullptr:i->second;
+}
+const Instance*DataModel::GetService(const std::string&n)const{
+ auto i=services_.find(n);
+ return i==services_.end()?nullptr:i->second;
+}
+
 void DataModel::ReplaceContentsFrom(const DataModel&source){
  InitializeDefaultServices();
  for(const auto&entry:services_){
@@ -19,16 +48,17 @@ void DataModel::ReplaceContentsFrom(const DataModel&source){
   for(auto*child:src->GetChildren())if(auto copy=child->Clone())Instance::SetParent(std::move(copy),dst);
  }
 }
+
 std::unique_ptr<Instance>DataModel::Clone()const{
  auto c=std::make_unique<DataModel>();
- c->SetName(Name()); c->SetArchivable(Archivable());
- // DataModel always owns one canonical copy of each service. Clone service children
- // into the canonical service instead of appending duplicate service roots.
- for(auto*child:GetChildren()){
-   auto*target=c->GetService(child->Name());
-   if(!target) continue;
-   target->SetArchivable(child->Archivable());
-   for(auto*grand:child->GetChildren()) if(auto copy=grand->Clone()) Instance::SetParent(std::move(copy),target);
+ c->SetName(Name());
+ c->SetArchivable(Archivable());
+ for(const auto&entry:services_){
+  auto*dst=c->GetService(entry.first);
+  if(!dst)continue;
+  const auto*src=entry.second;
+  dst->SetArchivable(src->Archivable());
+  for(auto*child:src->GetChildren())if(auto copy=child->Clone())Instance::SetParent(std::move(copy),dst);
  }
  return c;
 }
