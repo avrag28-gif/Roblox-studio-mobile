@@ -116,6 +116,7 @@ public class MainActivity extends Activity {
   static native int nativeRaycast(float x,float y,float w,float h);
   static native void nativeSetPlaying(boolean playing);
   static native boolean nativeSetProperty(String name,String property,double value);
+  static native String nativeGetSceneSnapshot();
   void refreshExplorer(){
     explorer.removeAllViews();
     TextView h=text("EXPLORER",13);h.setTypeface(Typeface.DEFAULT,Typeface.BOLD);explorer.addView(h,new LinearLayout.LayoutParams(-1,dp(46)));
