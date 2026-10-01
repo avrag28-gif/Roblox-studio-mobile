@@ -64,7 +64,7 @@ int main(){
 
  PhysicsWorld physics;
  Ray ray{b.min,{1,0,0}};
- auto hit=physics.Raycast(parent,ray);
+ auto hit=physics.Raycast(other,ray);
  (void)hit;
 
  Model boundsModel;
