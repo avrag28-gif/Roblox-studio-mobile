@@ -7,4 +7,15 @@ class DocumentSerializer(private val reflection:ReflectionRegistry,private val p
   val props=reflection.get(i.className)?.all()?.associate{d->d.name to (properties.get<Any>(i,d.name)?.toString() ?: "")}?:emptyMap()
   return SerializedInstance(i.className,i.name,props,i.children.map(::serialize))
  }
+ fun toXml(root:Instance):String{
+  val out=StringBuilder()
+  fun esc(v:String)=v.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;").replace(""","&quot;")
+  fun write(i:Instance,depth:Int){
+   val pad="  ".repeat(depth);out.append(pad).append("<Item class="").append(esc(i.className)).append("" name="").append(esc(i.name)).append("">\n")
+   reflection.get(i.className)?.all()?.forEach{d->out.append(pad).append("  <Property name="").append(esc(d.name)).append("">").append(esc(properties.get<Any>(i,d.name)?.toString()?:"")).append("</Property>\n")}
+   i.children.forEach{write(it,depth+1)}
+   out.append(pad).append("</Item>\n")
+  }
+  write(root,0);return out.toString()
+ }
 }
