@@ -3,6 +3,7 @@
 #include "../src/core/base_part.h"
 #include "../src/core/class_system.h"
 #include "../src/core/transform_hierarchy.h"
+#include "../src/core/model_bounds.h"
 #include <cassert>
 #include <cmath>
 using namespace rsm;
@@ -44,6 +45,15 @@ int main(){
  Instance::SetParent(std::move(rp),&rotated);
  rotated.SetPivot(CFrame({5,0,0},Quaternion::FromAxisAngle({0,1,0},3.14159265358979323846f/2)));
  assert(near(rpRaw->Position().x,5)); assert(near(rpRaw->Position().z,-2));
+
+ Model boundsModel;
+ auto boundsPart=std::make_unique<Part>();
+ boundsPart->SetSize({2,4,6});
+ boundsPart->SetCFrame(CFrame({5,0,0},Quaternion::FromAxisAngle({0,1,0},3.14159265358979323846f/2)));
+ Instance::SetParent(std::move(boundsPart),&boundsModel);
+ auto bounds=boundsModel;
+ const auto extents=ModelWorldAabbSize(bounds);
+ assert(near(extents.x,6)); assert(near(extents.y,4)); assert(near(extents.z,2));
 
  Model target;
  target.SetPivot(CFrame({20,0,0}));
