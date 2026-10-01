@@ -51,8 +51,7 @@ int main(){
  boundsPart->SetSize({2,4,6});
  boundsPart->SetCFrame(CFrame({5,0,0},Quaternion::FromAxisAngle({0,1,0},3.14159265358979323846f/2)));
  Instance::SetParent(std::move(boundsPart),&boundsModel);
- auto bounds=boundsModel;
- const auto extents=ModelWorldAabbSize(bounds);
+ const auto extents=ModelWorldAabbSize(boundsModel);
  assert(near(extents.x,6)); assert(near(extents.y,4)); assert(near(extents.z,2));
 
  Model target;
