@@ -3,6 +3,7 @@
 #include "../core/instance_factory.h"
 #include "../core/base_part.h"
 #include "../core/class_system.h"
+#include "../core/transform_hierarchy.h"
 #include <memory>
 #include <sstream>
 #include <string>
@@ -18,8 +19,8 @@ class SceneCodec {
  static int ShapeCode(PartShape s){return static_cast<int>(s);} static int MaterialCode(Material m){return static_cast<int>(m);}
  static void Write(const Instance&i,std::ostream&o,int depth){
   o<<depth<<'|'<<Hex(i.ClassName())<<'|'<<Hex(i.Name())<<'|'<<Hex(i.Id())<<'|'<<i.Archivable();
-  if(auto*m=dynamic_cast<const Model*>(&i)){\n   auto pos=m->Pivot().position,q=m->Pivot().rotation;\n   o<<"|M|"<<V3(pos.x,pos.y,pos.z)<<'|'<<q.x<<','<<q.y<<','<<q.z<<','<<q.w;\n  }\n  if(auto*p=dynamic_cast<const BasePart*>(&i)){
-   auto pos=p->Position(),size=p->Size(),col=p->Color(),q=p->CFrameValue().rotation;
+  if(auto*m=dynamic_cast<const Model*>(&i)){\n   auto world=rsm::WorldCFrame(*m); auto pos=world.position,q=world.rotation;\n   o<<"|M|"<<V3(pos.x,pos.y,pos.z)<<'|'<<q.x<<','<<q.y<<','<<q.z<<','<<q.w;\n  }\n  if(auto*p=dynamic_cast<const BasePart*>(&i)){
+   auto world=rsm::WorldCFrame(*p); auto pos=world.position,size=p->Size(),col=p->Color(),q=world.rotation;
    o<<'|'<<V3(pos.x,pos.y,pos.z)<<'|'<<V3(size.x,size.y,size.z)<<'|'<<V3(col.r,col.g,col.b)
     <<'|'<<p->Transparency()<<'|'<<p->Anchored()<<'|'<<p->CanCollide()<<'|'<<p->CanTouch()<<'|'<<p->CanQuery()<<'|'<<p->Mass()<<'|'<<ShapeCode(p->Shape())<<'|'<<MaterialCode(p->MaterialValue())
     <<'|'<<q.x<<','<<q.y<<','<<q.z<<','<<q.w;
