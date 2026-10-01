@@ -41,6 +41,8 @@ class ViewportSurface(
         isFocusableInTouchMode = true
     }
 
+    fun setTransformTool(tool: com.roblox.studiomobile.editor.TransformTool) { renderer.transformTool = tool }
+
     override fun onTouchEvent(event: MotionEvent): Boolean {
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
