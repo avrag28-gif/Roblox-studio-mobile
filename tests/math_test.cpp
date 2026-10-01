@@ -54,6 +54,20 @@ int main(){
  const auto extents=ModelWorldAabbSize(boundsModel);
  assert(near(extents.x,6)); assert(near(extents.y,4)); assert(near(extents.z,2));
 
+ Model hierarchy;
+ hierarchy.SetPivot(CFrame({10,0,0},Quaternion::FromAxisAngle({0,1,0},3.14159265358979323846f/2)));
+ auto localPart=std::make_unique<Part>();
+ localPart->SetCFrame(CFrame({2,0,0}));
+ auto*localRaw=localPart.get();
+ Instance::SetParent(std::move(localPart),&hierarchy);
+ const auto localCf=LocalCFrame(*localRaw);
+ const auto worldCf=WorldCFrame(*localRaw);
+ assert(near(localCf.position.x,2)); assert(near(localCf.position.z,0));
+ assert(near(worldCf.position.x,10)); assert(near(worldCf.position.z,-2));
+ SetLocalCFrame(*localRaw,CFrame({4,0,0}));
+ assert(near(WorldCFrame(*localRaw).position.x,10));
+ assert(near(WorldCFrame(*localRaw).position.z,-4));
+
  Model target;
  target.SetPivot(CFrame({20,0,0}));
  auto reparented=std::make_unique<Part>();
