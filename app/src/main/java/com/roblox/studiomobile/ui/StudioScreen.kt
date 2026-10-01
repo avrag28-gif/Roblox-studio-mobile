@@ -40,6 +40,7 @@ class StudioScreen(private val context:Context,private val runtime:CoreRuntime){
   surface.onPicked={select(it)}
   surface.onTransformGestureStart={transform.beginGesture()}
   surface.onTransformGestureEnd={commit->transform.endGesture(commit)}
+  surface.post { surface.setTransformTool(transform.tool) }
   surface.gizmoOrigin={selected?.let{i->runtime.properties.get<Vec3>(i,"Position") ?: Vec3() } ?: Vec3()}
   surface.gizmoLength={selected?.let{i->val s=runtime.properties.get<Vec3>(i,"Size") ?: Vec3(4f,1f,2f);(s.x+s.y+s.z).coerceAtLeast(1f)*1.4f} ?: 1f}
   surface.onGizmoAxisPick={axis->transform.axis=when(axis){GizmoAxis.X->TransformAxis.X;GizmoAxis.Y->TransformAxis.Y;GizmoAxis.Z->TransformAxis.Z;GizmoAxis.None->TransformAxis.Screen}}
