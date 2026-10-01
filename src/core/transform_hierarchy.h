@@ -61,6 +61,23 @@ inline void RotateWorld(Instance& instance, const Quaternion& delta) {
                                     (delta * WorldCFrame(instance).rotation).Normalized()));
 }
 
+inline void ScaleModel(Model& model, Vector3 factors) {
+    const CFrame pivot=model.Pivot();
+    for(auto* node:model.GetDescendants()) {
+        if(auto* part=dynamic_cast<BasePart*>(node)) {
+            const Vector3 local=pivot.Inverse().PointToWorldSpace(WorldPosition(*part));
+            const Vector3 scaled{local.x*factors.x,local.y*factors.y,local.z*factors.z};
+            const Vector3 world=pivot.PointToWorldSpace(scaled);
+            part->SetSize({std::max(0.05f,part->Size().x*factors.x),std::max(0.05f,part->Size().y*factors.y),std::max(0.05f,part->Size().z*factors.z)});
+            SetWorldCFrame(*part,CFrame(world,WorldRotation(*part)));
+        } else if(auto* child=dynamic_cast<Model*>(node)) {
+            const Vector3 local=pivot.Inverse().PointToWorldSpace(WorldPosition(*child));
+            const Vector3 scaled{local.x*factors.x,local.y*factors.y,local.z*factors.z};
+            SetWorldCFrame(*child,CFrame(pivot.PointToWorldSpace(scaled),WorldRotation(*child)));
+        }
+    }
+}
+
 inline void RotateLocal(Instance& instance, const Quaternion& delta) {
     SetLocalCFrame(instance, CFrame(LocalCFrame(instance).position,
                                     (LocalCFrame(instance).rotation * delta).Normalized()));
