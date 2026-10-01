@@ -5,15 +5,7 @@ data class SceneTransform(var position:Vec3=Vec3(),var rotation:Vec3=Vec3(),var 
 data class SceneNode(val instance:Instance,val transform:SceneTransform=SceneTransform(),val children:MutableList<SceneNode> = mutableListOf())
 class SceneGraph(private val root:Instance){
  private val nodes=linkedMapOf<String,SceneNode>()
- fun sync(){
-  nodes.clear()
-  fun visit(i:Instance){
-   val node=SceneNode(i)
-   nodes[i.id]=node
-   i.children.forEach{child->visit(child)}
-  }
-  visit(root)
- }
+ fun sync(){nodes.clear();fun visit(i:Instance){nodes[i.id]=SceneNode(i);i.children.forEach(::visit)};visit(root)}
  fun node(i:Instance):SceneNode?=nodes[i.id]
  fun all():List<SceneNode>=nodes.values.toList()
  fun renderable():List<SceneNode>=nodes.values.filter{it.instance.className=="Part"}
