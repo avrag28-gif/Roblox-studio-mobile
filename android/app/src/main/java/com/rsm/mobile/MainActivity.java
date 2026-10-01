@@ -124,7 +124,12 @@ static class Obj {
     append("INFO",playing?"Play session started from isolated runtime snapshot.":"Play session stopped; editor scene preserved.");viewport.invalidate();
   }
 
-  void refresh(){refreshExplorer();refreshProps();syncNativeScene();viewport.invalidate();status.setText((playing?"●  PLAY":"●  EDIT")+"   •   "+objects.size()+" objects"+(dirty?"   •   Unsaved":"   •   Saved"));}
+  void refresh(){syncNativeScene();refreshNativeScene();applyNativeSceneToEditor();refreshExplorer();refreshProps();viewport.invalidate();status.setText((playing?"●  PLAY":"●  EDIT")+"   •   "+objects.size()+" objects"+(dirty?"   •   Unsaved":"   •   Saved"));}
+  void applyNativeSceneToEditor(){
+    String keep=selected==null?null:selected.id; ArrayList<Obj> next=new ArrayList<>();
+    for(NativeObj n:nativeScene){Obj o=new Obj(n.name);o.id=n.id;o.type=n.type;o.parent=n.parent;o.x=n.x;o.y=n.y;o.z=n.z;o.sx=n.sx;o.sy=n.sy;o.sz=n.sz;o.rx=n.rx;o.ry=n.ry;o.rz=n.rz;o.color=n.color;o.anchored=n.anchored;o.collide=n.collide;next.add(o);}
+    objects.clear();objects.addAll(next);selected=null;if(keep!=null)for(Obj o:objects)if(keep.equals(o.id)){selected=o;break;}
+  }
   void syncNativeScene(){ if(nativeViewport==null)return; float[] data=new float[objects.size()*14]; String[] ids=new String[objects.size()]; String[] names=new String[objects.size()]; String[] types=new String[objects.size()]; String[] parents=new String[objects.size()]; int i=0,k=0; for(Obj o:objects){data[i++]=o.x;data[i++]=o.y;data[i++]=o.z;data[i++]=o.sx;data[i++]=o.sy;data[i++]=o.sz;data[i++]=o.rx;data[i++]=o.ry;data[i++]=o.rz;data[i++]=Color.red(o.color)/255f;data[i++]=Color.green(o.color)/255f;data[i++]=Color.blue(o.color)/255f;data[i++]=o.anchored?1:0;data[i++]=o.collide?1:0;ids[k]=o.id;names[k]=o.name;types[k]=o.type;parents[k]=o.parent;k++;} nativeSyncScene(data,ids,names,types,parents); }
   static native void nativeSurfaceCreated();
   static native void nativeSurfaceChanged(int w,int h);
