@@ -124,7 +124,13 @@ static class Obj {
     append("INFO",playing?"Play session started from isolated runtime snapshot.":"Play session stopped; editor scene preserved.");viewport.invalidate();
   }
 
-  void refresh(){syncNativeScene();pullNative();refreshExplorer();refreshProps();viewport.invalidate();status.setText((playing?"●  PLAY":"●  EDIT")+"   •   "+objects.size()+" objects"+(dirty?"   •   Unsaved":"   •   Saved"));}
+  void refresh(){
+    refreshNativeScene();
+    if(nativeScene.isEmpty()&&!objects.isEmpty()) syncNativeScene();
+    applyNativeSceneToEditor();
+    refreshExplorer();refreshProps();viewport.invalidate();
+    status.setText((playing?"●  PLAY":"●  EDIT")+"   •   "+objects.size()+" objects"+(dirty?"   •   Unsaved":"   •   Saved"));
+  }
   void pullNative(){refreshNativeScene();applyNativeSceneToEditor();refreshExplorer();refreshProps();viewport.invalidate();}
   void applyNativeSceneToEditor(){
     String keep=selected==null?null:selected.id; ArrayList<Obj> next=new ArrayList<>();
@@ -174,7 +180,7 @@ static class Obj {
     row3("Rotation",selected.rx,selected.ry,selected.rz,(a,b,c)->{selected.rx=a;selected.ry=b;selected.rz=c;changed();});
     row3("Size",selected.sx,selected.sy,selected.sz,(a,b,c)->{selected.sx=Math.max(.1f,a);selected.sy=Math.max(.1f,b);selected.sz=Math.max(.1f,c);changed();});
     section("APPEARANCE");
-    EditText nameEdit=edit(selected.name);nameEdit.setHint("Name");nameEdit.setOnFocusChangeListener((v,has)->{if(!has&&selected!=null&&!nameEdit.getText().toString().trim().isEmpty()){selected.name=nameEdit.getText().toString().trim();changed();}});props.addView(labelRow("Name",nameEdit));
+    EditText nameEdit=edit(selected.name);nameEdit.setHint("Name");nameEdit.setOnFocusChangeListener((v,has)->{if(!has&&selected!=null&&!nameEdit.getText().toString().trim().isEmpty()){selected.name=nameEdit.getText().toString().trim();nativeSetName(selected.id,selected.name);changed();}});props.addView(labelRow("Name",nameEdit));
     Button color=btn("Color   "+selected.color);color.setOnClickListener(v->cycleColor());props.addView(color);
     row1("Transparency",selected.type.equals("Model")?0:0);
     section("PHYSICS");
@@ -190,7 +196,7 @@ static class Obj {
   void row3(String label,float a,float b,float c,Triple cb){
     LinearLayout line=new LinearLayout(this);line.setOrientation(LinearLayout.HORIZONTAL);line.addView(text(label,11),new LinearLayout.LayoutParams(dp(72),dp(48)));
     EditText x=number(a),y=number(b),z=number(c);line.addView(x,new LinearLayout.LayoutParams(0,dp(48),1));line.addView(y,new LinearLayout.LayoutParams(0,dp(48),1));line.addView(z,new LinearLayout.LayoutParams(0,dp(48),1));
-    TextWatcherCommit w=new TextWatcherCommit(()->{float vx=val(x,a),vy=val(y,b),vz=val(z,c);cb.go(vx,vy,vz);if(selected!=null){if(label.equals("Position")){nativeSetProperty(selected.name,"PositionX",vx);nativeSetProperty(selected.name,"PositionY",vy);nativeSetProperty(selected.name,"PositionZ",vz);}else if(label.equals("Size")){nativeSetProperty(selected.name,"SizeX",vx);nativeSetProperty(selected.name,"SizeY",vy);nativeSetProperty(selected.name,"SizeZ",vz);}}});x.addTextChangedListener(w);y.addTextChangedListener(w);z.addTextChangedListener(w);props.addView(line);
+    TextWatcherCommit w=new TextWatcherCommit(()->{float vx=val(x,a),vy=val(y,b),vz=val(z,c);cb.go(vx,vy,vz);if(selected!=null){if(label.equals("Position")){nativeSetProperty(selected.id,"PositionX",vx);nativeSetProperty(selected.id,"PositionY",vy);nativeSetProperty(selected.id,"PositionZ",vz);}else if(label.equals("Size")){nativeSetProperty(selected.id,"SizeX",vx);nativeSetProperty(selected.id,"SizeY",vy);nativeSetProperty(selected.id,"SizeZ",vz);}}});x.addTextChangedListener(w);y.addTextChangedListener(w);z.addTextChangedListener(w);props.addView(line);
   }
   float val(EditText e,float d){try{return Float.parseFloat(e.getText().toString());}catch(Exception ex){return d;}}
   EditText number(float n){EditText e=edit(String.format(Locale.US,"%.2f",n));e.setInputType(2|8192);return e;}
