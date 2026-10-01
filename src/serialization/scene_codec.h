@@ -52,7 +52,7 @@ public:
    int depth=0;try{depth=std::stoi(f[0]);}catch(...){error="invalid scene depth";return nullptr;}
    if(depth<0||depth>int(stack.size())){error="invalid scene hierarchy";return nullptr;}
    const std::string cls=Unhex(f[1]),name=Unhex(f[2]),id=Unhex(f[3]);
-   if(depth==0&&cls=="DataModel"){dm->SetId(id);dm->SetArchivable(std::stoi(f[4])!=0);stack.clear();continue;}
+   if(depth==0&&cls=="DataModel"){dm->SetId(id);dm->SetArchivable(std::stoi(f[4])!=0);stack.resize(1);stack[0]=dm.get();continue;}
    if(depth==1&&cls=="Service"){
     auto*svc=dm->GetService(name);if(!svc){error="unknown service";return nullptr;}svc->SetId(id);svc->SetArchivable(std::stoi(f[4])!=0);stack.resize(2);stack[1]=svc;continue;
    }
