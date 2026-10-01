@@ -28,7 +28,7 @@ class StudioScreen(private val context:Context,private val runtime:CoreRuntime){
   return root
  }
  private fun targetParent():Instance=selected?:runtime.services.get<Instance>("Workspace")?:runtime.dataModel
- private fun create(className:String){val p=targetParent();val i=controller.create(className,p);runtime.transactions.execute(object:Command{override fun execute(){};override fun undo(){i.setParent(null)}});refresh();select(i)}
+ private fun create(className:String){val i=controller.create(className,targetParent());refresh();select(i)}
  private fun select(i:Instance){selected=i;controller.select(i);showProperties(i)}
  private fun refresh(){list.removeAllViews();explorer.flatten().forEach{n->list.addView(Button(context).apply{text=("  ".repeat(n.depth))+n.instance.name;gravity=Gravity.START;setOnClickListener{select(n.instance)}},LinearLayout.LayoutParams(-1,48))}}
  private fun explorerView():ScrollView=ScrollView(context).apply{addView(list);post{refresh()}}
@@ -38,7 +38,6 @@ class StudioScreen(private val context:Context,private val runtime:CoreRuntime){
   PropertiesModel(runtime.reflection,runtime.properties).rows(i).forEach{row->
    properties.addView(TextView(context).apply{text=row.name;setTextColor(Color.WHITE);setPadding(8,8,8,2)},LinearLayout.LayoutParams(-1,34))
    val edit=EditText(context).apply{setText(row.value?.toString()?:"");setSingleLine();setTextColor(Color.WHITE)}
-   if(row.type==PropertyType.Bool){edit.inputType=2}
    edit.setOnEditorActionListener{_,_,_->commit(i,row,edit.text.toString());true}
    properties.addView(edit,LinearLayout.LayoutParams(-1,52))
   }
@@ -49,8 +48,8 @@ class StudioScreen(private val context:Context,private val runtime:CoreRuntime){
    PropertyType.Float->runtime.properties.set(i,row.name,text.toFloat())
    PropertyType.Int->runtime.properties.set(i,row.name,text.toInt())
    PropertyType.Double->runtime.properties.set(i,row.name,text.toDouble())
-   PropertyType.String->if(row.name=="Name")i.rename(text)else runtime.properties.set(i,row.name,text)
+   PropertyType.String->if(row.name=="Name")controller.rename(i,text)else runtime.properties.set(i,row.name,text)
    else->runtime.properties.set(i,row.name,text)
-  };refresh()}catch(_:Exception){}
+  };refresh();showProperties(i)}catch(_:Exception){}
  }
 }
