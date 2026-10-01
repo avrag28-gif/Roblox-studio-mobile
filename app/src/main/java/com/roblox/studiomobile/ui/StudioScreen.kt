@@ -35,7 +35,7 @@ class StudioScreen(private val context:Context,private val runtime:CoreRuntime){
  private fun viewport():FrameLayout{
   val frame=FrameLayout(context)
   val camera=ViewportCamera()
-  val surface=ViewportSurface(context,scene.graph,camera)
+  val surface=ViewportSurface(context,scene.graph,camera,runtime.selection)
   surface.onPicked={select(it)}
   surface.onTransformGestureStart={transform.beginGesture()}
   surface.onTransformGestureEnd={commit->transform.endGesture(commit)}
