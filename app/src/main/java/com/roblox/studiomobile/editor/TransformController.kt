@@ -28,6 +28,13 @@ class TransformController(private val runtime: CoreRuntime) {
         runtime.properties.set(instance, "Size", end)
     }
 
+    fun applyAxisDelta(instances: Collection<Instance>, gizmoAxis: GizmoAxis, delta: Float): Boolean {
+        val targets = instances.filter { it.className == "Part" }
+        if (targets.isEmpty() || gizmoAxis == GizmoAxis.None) return false
+        targets.forEach { applyAxisDelta(it, gizmoAxis, delta) }
+        return true
+    }
+
     fun applyAxisDelta(instance: Instance, gizmoAxis: GizmoAxis, delta: Float): Boolean {
         if (instance.className != "Part" || gizmoAxis == GizmoAxis.None) return false
         val axis = when (gizmoAxis) {
