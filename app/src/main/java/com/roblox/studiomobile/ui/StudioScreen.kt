@@ -30,7 +30,10 @@ class StudioScreen(private val context:Context,private val runtime:CoreRuntime){
  }
  private fun viewport():FrameLayout{
   val frame=FrameLayout(context)
-  frame.addView(ViewportSurface(context,scene.graph,ViewportCamera()),FrameLayout.LayoutParams(-1,-1))
+  val camera=ViewportCamera()
+  val surface=ViewportSurface(context,scene.graph,camera)
+  surface.onPicked={select(it)}
+  frame.addView(surface,FrameLayout.LayoutParams(-1,-1))
   return frame
  }
  private fun targetParent():Instance=selected?:runtime.services.get<Instance>("Workspace")?:runtime.dataModel
