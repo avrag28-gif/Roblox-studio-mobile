@@ -55,8 +55,7 @@ public:
     }
    }
    if(auto*script=dynamic_cast<Script*>(obj.get())){
-    if(f.size()>=11)script->SetSource(Unhex(f[10]));
-    else if(f.size()>=10&&cls=="Script")script->SetSource(Unhex(f[9]));
+    if(f.size()>=4)script->SetSource(Unhex(f[3]));
    }
    Instance*parent=depth==0?dm.get():stack[depth-1];
    if(!parent){error="missing scene parent";return nullptr;}
