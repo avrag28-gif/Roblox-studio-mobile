@@ -17,8 +17,12 @@ class ViewportSurface(
     private var lastY = 0f
     private var lastSpan = 0f
     private var gesture = 0
+    private var lockedAxis = com.roblox.studiomobile.editor.GizmoAxis.None
     var onPicked: ((com.roblox.studiomobile.core.Instance) -> Unit)? = null
     var onTransformDrag: ((Float, Float) -> Boolean)? = null
+    var onGizmoAxisPick: ((com.roblox.studiomobile.editor.GizmoAxis) -> Unit)? = null
+    var gizmoOrigin: (() -> com.roblox.studiomobile.editor.Vec3)? = null
+    var gizmoLength: (() -> Float)? = null
     var onTransformGestureStart: (() -> Unit)? = null
     var onTransformGestureEnd: ((Boolean) -> Unit)? = null
     private var downX = 0f
@@ -40,6 +44,13 @@ class ViewportSurface(
                 downX = event.x
                 downY = event.y
                 gesture = 1
+                lockedAxis = com.roblox.studiomobile.editor.GizmoAxis.None
+                val origin = gizmoOrigin?.invoke()
+                val length = gizmoLength?.invoke()
+                if (origin != null && length != null) {
+                    lockedAxis = com.roblox.studiomobile.editor.GizmoPicker().pick(camera.ray(event.x, event.y, width, height), origin, length)
+                    if (lockedAxis != com.roblox.studiomobile.editor.GizmoAxis.None) onGizmoAxisPick?.invoke(lockedAxis)
+                }
                 onTransformGestureStart?.invoke()
                 return true
             }
