@@ -37,7 +37,7 @@ class StudioScreen(private val context:Context,private val runtime:CoreRuntime){
   val camera=ViewportCamera()
   val surface=ViewportSurface(context,scene.graph,camera)
   surface.onPicked={select(it)}
-  surface.onDrag={dx,dy->selected?.let{if(transform.tool!=TransformTool.Select)transform.applyScreenDelta(it,dx,dy)}}
+  surface.onTransformDrag={dx,dy->selected?.let{transform.applyScreenDelta(it,dx,dy)} ?: false}
   frame.addView(surface,FrameLayout.LayoutParams(-1,-1))
   return frame
  }
@@ -62,7 +62,7 @@ class StudioScreen(private val context:Context,private val runtime:CoreRuntime){
    PropertyType.Float->runtime.properties.set(i,row.name,text.toFloat())
    PropertyType.Int->runtime.properties.set(i,row.name,text.toInt())
    PropertyType.Double->runtime.properties.set(i,row.name,text.toDouble())
-   PropertyType.String->if(row.name=="Name")controller.rename(i,text)else runtime.properties.set(i,row.name,text)
+   PropertyType.String->runtime.properties.set(i,row.name,text)
    else->runtime.properties.set(i,row.name,text)
   };refresh();showProperties(i)}catch(_:Exception){}
  }
