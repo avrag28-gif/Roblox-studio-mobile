@@ -36,5 +36,22 @@ int main(){
  ApplyModelWorldPivot(model,CFrame({8,0,0}));
  assert(near(nestedRaw->Pivot().position.x,10));
  assert(near(nestedPartRaw->Position().x,11));
+
+ Model target;
+ target.SetPivot(CFrame({20,0,0}));
+ auto reparented=std::make_unique<Part>();
+ reparented->SetCFrame(CFrame({3,4,5},Quaternion::FromAxisAngle({0,1,0},0.4f)));
+ auto*reparentedRaw=reparented.get();
+ Instance::SetParent(std::move(reparented),&model);
+ const CFrame before=WorldCFrame(*reparentedRaw);
+ ReparentPreserveWorld(*reparentedRaw,target);
+ const CFrame after=WorldCFrame(*reparentedRaw);
+ assert(near(before.position.x,after.position.x));
+ assert(near(before.position.y,after.position.y));
+ assert(near(before.position.z,after.position.z));
+ assert(near(before.rotation.x,after.rotation.x));
+ assert(near(before.rotation.y,after.rotation.y));
+ assert(near(before.rotation.z,after.rotation.z));
+ assert(near(before.rotation.w,after.rotation.w));
  return 0;
 }
