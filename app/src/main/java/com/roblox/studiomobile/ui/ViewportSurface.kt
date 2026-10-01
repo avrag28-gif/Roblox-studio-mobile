@@ -22,6 +22,7 @@ class ViewportSurface(
     private var lastAxisValue = 0f
     var onPicked: ((com.roblox.studiomobile.core.Instance) -> Unit)? = null
     var onTransformDrag: ((Float, Float) -> Boolean)? = null
+    var onTransformAxisDelta: ((com.roblox.studiomobile.editor.GizmoAxis, Float) -> Boolean)? = null
     var onGizmoAxisPick: ((com.roblox.studiomobile.editor.GizmoAxis) -> Unit)? = null
     var gizmoOrigin: (() -> com.roblox.studiomobile.editor.Vec3)? = null
     var gizmoLength: (() -> Float)? = null
@@ -51,7 +52,12 @@ class ViewportSurface(
                 val length = gizmoLength?.invoke()
                 if (origin != null && length != null) {
                     lockedAxis = com.roblox.studiomobile.editor.GizmoPicker().pick(camera.ray(event.x, event.y, width, height), origin, length)
-                    if (lockedAxis != com.roblox.studiomobile.editor.GizmoAxis.None) onGizmoAxisPick?.invoke(lockedAxis)
+                    onGizmoAxisPick?.invoke(lockedAxis)
+                if (lockedAxis != com.roblox.studiomobile.editor.GizmoAxis.None) {
+                    lastAxisValue = com.roblox.studiomobile.editor.GizmoPicker().axisParameter(
+                        camera.ray(event.x, event.y, width, height), origin, lockedAxis
+                    ) ?: 0f
+                }
                 }
                 onTransformGestureStart?.invoke()
                 return true
@@ -71,7 +77,19 @@ class ViewportSurface(
                 } else if (gesture == 1) {
                     val dx = event.x - lastX
                     val dy = event.y - lastY
-                    val transformed = onTransformDrag?.invoke(dx, dy) == true
+                    val transformed = if (lockedAxis != com.roblox.studiomobile.editor.GizmoAxis.None) {
+                        val origin = gizmoOrigin?.invoke()
+                        if (origin != null) {
+                            val current = com.roblox.studiomobile.editor.GizmoPicker().axisParameter(
+                                camera.ray(event.x, event.y, width, height), origin, lockedAxis
+                            )
+                            if (current != null) {
+                                val delta = current - lastAxisValue
+                                lastAxisValue = current
+                                onTransformAxisDelta?.invoke(lockedAxis, delta) == true
+                            } else false
+                        } else false
+                    } else onTransformDrag?.invoke(dx, dy) == true
                     if (!transformed) camera.orbit(-dx * 0.008f, -dy * 0.008f)
                     lastX = event.x
                     lastY = event.y
@@ -93,11 +111,15 @@ class ViewportSurface(
                     if (hit != null) onPicked?.invoke(hit)
                 }
                 gesture = 0
+                lockedAxis = com.roblox.studiomobile.editor.GizmoAxis.None
+                onGizmoAxisPick?.invoke(lockedAxis)
                 onTransformGestureEnd?.invoke(true)
                 return true
             }
             MotionEvent.ACTION_CANCEL -> {
                 gesture = 0
+                lockedAxis = com.roblox.studiomobile.editor.GizmoAxis.None
+                onGizmoAxisPick?.invoke(lockedAxis)
                 onTransformGestureEnd?.invoke(false)
                 return true
             }
