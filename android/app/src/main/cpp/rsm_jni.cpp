@@ -1,6 +1,7 @@
 #include <jni.h>
 #include "core/data_model.h"
 #include "core/instance_factory.h"
+#include "core/transform_hierarchy.h"
 #include "core/change_history.h"
 #include "serialization/scene_codec.h"
 #include "renderer/gles_renderer.h"
@@ -264,7 +265,7 @@ static bool ApplyNativeProperty(const std::string&id,const std::string&property,
   else if(property=="RotationY")e.y=static_cast<float>(value);
   else if(property=="RotationZ")e.z=static_cast<float>(value);
   else return false;
-  cf.rotation=rsm::Quaternion::FromEulerXYZ(e.x,e.y,e.z);model->SetPivot(cf);return true;
+  cf.rotation=rsm::Quaternion::FromEulerXYZ(e.x,e.y,e.z);rsm::ApplyModelWorldPivot(*model,cf);return true;
  }
  auto*part=dynamic_cast<rsm::BasePart*>(it->second);if(!part)return false;
  if(property=="PositionX"){auto v=part->Position();v.x=value;part->SetPosition(v);}else if(property=="PositionY"){auto v=part->Position();v.y=value;part->SetPosition(v);}else if(property=="PositionZ"){auto v=part->Position();v.z=value;part->SetPosition(v);}else if(property=="SizeX"){auto v=part->Size();v.x=value;part->SetSize(v);}else if(property=="SizeY"){auto v=part->Size();v.y=value;part->SetSize(v);}else if(property=="SizeZ"){auto v=part->Size();v.z=value;part->SetSize(v);}else if(property=="Anchored")part->SetAnchored(value!=0);else if(property=="CanCollide")part->SetCanCollide(value!=0);else if(property=="CanTouch")part->SetCanTouch(value!=0);else if(property=="CanQuery")part->SetCanQuery(value!=0);else if(property=="Transparency")part->SetTransparency(static_cast<float>(value));else if(property=="Mass")part->SetMass(static_cast<float>(value));else if(property=="Shape"){int v=static_cast<int>(value);if(v<0||v>4)return false;part->SetShape(static_cast<rsm::PartShape>(v));}else if(property=="Material"){int v=static_cast<int>(value);if(v<0||v>4)return false;part->SetMaterial(static_cast<rsm::Material>(v));}else if(property=="ColorR"){auto c=part->Color();c.r=static_cast<float>(value);part->SetColor(c);}else if(property=="ColorG"){auto c=part->Color();c.g=static_cast<float>(value);part->SetColor(c);}else if(property=="ColorB"){auto c=part->Color();c.b=static_cast<float>(value);part->SetColor(c);}else if(property=="RotationX"||property=="RotationY"||property=="RotationZ"){auto e=part->CFrameValue().rotation.ToEulerXYZ();if(property=="RotationX")e.x=static_cast<float>(value);else if(property=="RotationY")e.y=static_cast<float>(value);else e.z=static_cast<float>(value);part->SetCFrame(rsm::CFrame(part->Position(),rsm::Quaternion::FromEulerXYZ(e.x,e.y,e.z)));}else return false;return true;
