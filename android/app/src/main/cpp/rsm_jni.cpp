@@ -186,6 +186,14 @@ extern "C" JNIEXPORT jboolean JNICALL Java_com_rsm_mobile_MainActivity_nativeDel
  }
  if(sid)env->ReleaseStringUTFChars(id,sid);return ok?JNI_TRUE:JNI_FALSE;
 }
+extern "C" JNIEXPORT jboolean JNICALL Java_com_rsm_mobile_MainActivity_nativeSetName(JNIEnv* env,jclass,jstring id,jstring name){
+ std::lock_guard<std::mutex> lock(engineMutex);
+ const char*sid=env->GetStringUTFChars(id,nullptr),*sn=env->GetStringUTFChars(name,nullptr);
+ auto it=editorIndex.find(sid?sid:""); bool ok=it!=editorIndex.end()&&it->second!=workspace;
+ if(ok) it->second->SetName(sn?sn:"");
+ if(sid)env->ReleaseStringUTFChars(id,sid);if(sn)env->ReleaseStringUTFChars(name,sn);
+ return ok?JNI_TRUE:JNI_FALSE;
+}
 extern "C" JNIEXPORT jboolean JNICALL Java_com_rsm_mobile_MainActivity_nativeSetParent(JNIEnv* env,jclass,jstring id,jstring parentId){
  std::lock_guard<std::mutex> lock(engineMutex);
  const char*sid=env->GetStringUTFChars(id,nullptr),*sp=env->GetStringUTFChars(parentId,nullptr);
@@ -218,12 +226,12 @@ extern "C" JNIEXPORT jboolean JNICALL Java_com_rsm_mobile_MainActivity_nativeLoa
  const char*raw=env->GetStringUTFChars(scene,nullptr);std::string text=raw?raw:"";if(raw)env->ReleaseStringUTFChars(scene,raw);
  std::string error;auto loaded=rsm::SceneCodec::Load(text,error);if(!loaded)return JNI_FALSE;
  game.ReplaceContentsFrom(*loaded);workspace=game.GetService("Workspace");editorIndex.clear();changeHistory.Clear();structuralSnapshots.clear();
- std::size_t index=1;for(auto*x:workspace->GetDescendants())editorIndex["load"+std::to_string(index++)]=x;
+ for(auto*x:workspace->GetDescendants())editorIndex[x->Id()]=x;
  return JNI_TRUE;
 }
 extern "C" JNIEXPORT jstring JNICALL Java_com_rsm_mobile_MainActivity_nativeGetSceneSnapshot(JNIEnv* env,jclass){
  std::lock_guard<std::mutex> lock(engineMutex);std::string out="[";bool first=true;std::unordered_map<const rsm::Instance*,std::string>ids;for(const auto&e:editorIndex)ids[e.second]=e.first;
- for(auto*x:workspace?workspace->GetDescendants():std::vector<rsm::Instance*>{}){if(!first)out+=",";first=false;auto esc=[](const std::string&s){std::string r;for(char c:s){if(c=='\\'||c=='"')r+='\\';r+=c;}return r;};std::string id=ids.count(x)?ids[x]:x->Id();std::string parent="";if(x->Parent()&&ids.count(x->Parent()))parent=ids[x->Parent()];out+="{\"id\":\""+esc(id)+"\",\"name\":\""+esc(x->Name())+"\",\"type\":\""+esc(x->ClassName())+"\",\"parent\":\""+esc(parent)+"\"";if(auto*part=dynamic_cast<rsm::BasePart*>(x)){auto p=part->Position(),s=part->Size(),c=part->Color(),q=part->CFrameValue().rotation;out+=",\"position\":["+std::to_string(p.x)+","+std::to_string(p.y)+","+std::to_string(p.z)+"]";out+=",\"size\":["+std::to_string(s.x)+","+std::to_string(s.y)+","+std::to_string(s.z)+"]";out+=",\"rotation\":["+std::to_string(q.x)+","+std::to_string(q.y)+","+std::to_string(q.z)+","+std::to_string(q.w)+"]";out+=",\"color\":["+std::to_string(c.r)+","+std::to_string(c.g)+","+std::to_string(c.b)+"]";out+=",\"anchored\":"+(part->Anchored()?"true":"false")+",\"canCollide\":"+(part->CanCollide()?"true":"false");}out+="}";}out+="]";return env->NewStringUTF(out.c_str());
+ for(auto*x:workspace?workspace->GetDescendants():std::vector<rsm::Instance*>{}){if(!first)out+=",";first=false;auto esc=[](const std::string&s){std::string r;for(char c:s){if(c=='\\'||c=='"')r+='\\';r+=c;}return r;};std::string id=x->Id();std::string parent="";if(x->Parent()&&ids.count(x->Parent()))parent=ids[x->Parent()];out+="{\"id\":\""+esc(id)+"\",\"name\":\""+esc(x->Name())+"\",\"type\":\""+esc(x->ClassName())+"\",\"parent\":\""+esc(parent)+"\"";if(auto*part=dynamic_cast<rsm::BasePart*>(x)){auto p=part->Position(),s=part->Size(),c=part->Color(),q=part->CFrameValue().rotation;out+=",\"position\":["+std::to_string(p.x)+","+std::to_string(p.y)+","+std::to_string(p.z)+"]";out+=",\"size\":["+std::to_string(s.x)+","+std::to_string(s.y)+","+std::to_string(s.z)+"]";out+=",\"rotation\":["+std::to_string(q.x)+","+std::to_string(q.y)+","+std::to_string(q.z)+","+std::to_string(q.w)+"]";out+=",\"color\":["+std::to_string(c.r)+","+std::to_string(c.g)+","+std::to_string(c.b)+"]";out+=",\"anchored\":"+(part->Anchored()?"true":"false")+",\"canCollide\":"+(part->CanCollide()?"true":"false");}out+="}";}out+="]";return env->NewStringUTF(out.c_str());
 }
 extern "C" JNIEXPORT jstring JNICALL Java_com_rsm_mobile_MainActivity_nativeRaycastId(JNIEnv* env,jclass,jfloat x,jfloat y,jfloat w,jfloat h){
  std::lock_guard<std::mutex> lock(engineMutex);if(!workspace||w<=0||h<=0)return nullptr;auto hit=rsm::PhysicsWorld().Raycast(game,camera.ScreenRay(x,y,w,h));if(!hit.part)return nullptr;for(const auto&e:editorIndex)if(e.second==hit.part)return env->NewStringUTF(e.first.c_str());return nullptr;
