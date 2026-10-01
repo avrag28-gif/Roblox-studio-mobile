@@ -44,6 +44,7 @@ class StudioScreen(private val context:Context,private val runtime:CoreRuntime){
   surface.gizmoLength={selected?.let{i->val s=runtime.properties.get<Vec3>(i,"Size") ?: Vec3(4f,1f,2f);(s.x+s.y+s.z).coerceAtLeast(1f)*1.4f} ?: 1f}
   surface.onGizmoAxisPick={axis->transform.axis=when(axis){GizmoAxis.X->TransformAxis.X;GizmoAxis.Y->TransformAxis.Y;GizmoAxis.Z->TransformAxis.Z;GizmoAxis.None->TransformAxis.Screen}}
   surface.onTransformDrag={dx,dy->selected?.let{transform.applyScreenDelta(it,dx,dy)} ?: false}
+  surface.onTransformAxisDelta={axis,delta->selected?.let{transform.applyAxisDelta(it,axis,delta)} ?: false}
   frame.addView(surface,FrameLayout.LayoutParams(-1,-1))
   return frame
  }
