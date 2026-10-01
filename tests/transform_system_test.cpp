@@ -67,6 +67,16 @@ int main(){
  auto hit=physics.Raycast(other,ray);
  (void)hit;
 
+ Model scaledModel;
+ scaledModel.SetPivot(CFrame({0,0,0}));
+ auto scaledPart=std::make_unique<Part>(); scaledPart->SetSize({2,2,2}); scaledPart->SetPosition({2,0,0});
+ auto* scaledRaw=scaledPart.get(); Instance::SetParent(std::move(scaledPart),&scaledModel);
+ TransformController scaler; scaler.Begin(&scaledModel,TransformMode::Scale,GizmoAxis::X); scaler.Apply(100,0); scaler.End();
+ assert(near(scaledRaw->Size().x,4)); assert(near(WorldPosition(*scaledRaw).x,4));
+ GizmoController modelGizmo; modelGizmo.SetMode(GizmoMode::Rotate); modelGizmo.SetAxis(GizmoAxis::Y);
+ const auto mr0=WorldRotation(scaledModel); modelGizmo.Apply(scaledModel,{0,1,0}); const auto mr1=WorldRotation(scaledModel);
+ assert(!near(mr0.y,mr1.y)||!near(mr0.x,mr1.x)||!near(mr0.z,mr1.z)||!near(mr0.w,mr1.w));
+
  Model boundsModel;
  auto bp=std::make_unique<Part>();
  bp->SetSize({2,4,6});
