@@ -56,7 +56,7 @@ class ViewportSurface(
                 val length = gizmoLength?.invoke()
                 if (origin != null && length != null) {
                     lockedAxis = if (renderer.transformTool == com.roblox.studiomobile.editor.TransformTool.Rotate) {
-                        com.roblox.studiomobile.editor.GizmoPicker().pickRotateRing(camera.ray(event.x, event.y, width, height), origin, length * 0.75f)
+                        com.roblox.studiomobile.editor.GizmoPicker().pickRotateRing(camera.ray(event.x, event.y, width, height), origin, length * 1.05f)
                     } else {
                         com.roblox.studiomobile.editor.GizmoPicker().pick(camera.ray(event.x, event.y, width, height), origin, length)
                     }
