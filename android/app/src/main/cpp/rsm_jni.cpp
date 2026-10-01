@@ -82,12 +82,14 @@ extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeSyncSce
  }
 }
 
+static std::string MakeStructurePayload(const std::string&op,const std::string&id,const std::string&parent){return op+"|"+id+"|"+parent;}
+static void RecordStructure(const std::string&payload){if(!applyingHistory)changeHistory.Push({"","__STRUCTURE__",0,0,payload});}
 extern "C" JNIEXPORT jboolean JNICALL Java_com_rsm_mobile_MainActivity_nativeCreateInstance(JNIEnv* env,jclass,jstring id,jstring name,jstring type,jstring parentId){
  std::lock_guard<std::mutex> lock(engineMutex); if(!workspace)return JNI_FALSE;
  const char* sid=env->GetStringUTFChars(id,nullptr),*sn=env->GetStringUTFChars(name,nullptr),*st=env->GetStringUTFChars(type,nullptr),*sp=env->GetStringUTFChars(parentId,nullptr);
  std::string cls=st?st:"Part";auto p=rsm::InstanceFactory::New(cls);if(!p)p=rsm::InstanceFactory::New("Part");if(sn)p->SetName(sn);
  rsm::Instance*parent=workspace;auto pi=editorIndex.find(sp?sp:"");if(pi!=editorIndex.end())parent=pi->second;
- rsm::Instance*raw=p.get();rsm::Instance::SetParent(std::move(p),parent);if(sid)editorIndex[sid]=raw;
+ rsm::Instance*raw=p.get();rsm::Instance::SetParent(std::move(p),parent);if(sid)editorIndex[sid]=raw;RecordStructure(MakeStructurePayload("CREATE",sid?sid:"",sp?sp:""));
  if(sid)env->ReleaseStringUTFChars(id,sid);if(sn)env->ReleaseStringUTFChars(name,sn);if(st)env->ReleaseStringUTFChars(type,st);if(sp)env->ReleaseStringUTFChars(parentId,sp);return JNI_TRUE;
 }
 extern "C" JNIEXPORT jstring JNICALL Java_com_rsm_mobile_MainActivity_nativeDuplicateInstance(JNIEnv* env,jclass,jstring id){
@@ -99,7 +101,7 @@ extern "C" JNIEXPORT jstring JNICALL Java_com_rsm_mobile_MainActivity_nativeDupl
  if(sid)env->ReleaseStringUTFChars(id,sid); return env->NewStringUTF(newId.c_str());
 }
 extern "C" JNIEXPORT jboolean JNICALL Java_com_rsm_mobile_MainActivity_nativeDeleteInstance(JNIEnv* env,jclass,jstring id){
- std::lock_guard<std::mutex> lock(engineMutex);const char*sid=env->GetStringUTFChars(id,nullptr);auto it=editorIndex.find(sid?sid:"");bool ok=it!=editorIndex.end()&&it->second!=workspace;if(ok){it->second->Destroy();editorIndex.erase(it);}if(sid)env->ReleaseStringUTFChars(id,sid);return ok?JNI_TRUE:JNI_FALSE;
+ std::lock_guard<std::mutex> lock(engineMutex);const char*sid=env->GetStringUTFChars(id,nullptr);auto it=editorIndex.find(sid?sid:"");bool ok=it!=editorIndex.end()&&it->second!=workspace;if(ok){std::string parentId="";if(it->second->Parent()){for(const auto&e:editorIndex)if(e.second==it->second->Parent()){parentId=e.first;break;}}RecordStructure(MakeStructurePayload("DELETE",sid?sid:"",parentId));it->second->Destroy();editorIndex.erase(it);}if(sid)env->ReleaseStringUTFChars(id,sid);return ok?JNI_TRUE:JNI_FALSE;
 }
 extern "C" JNIEXPORT jboolean JNICALL Java_com_rsm_mobile_MainActivity_nativeSetParent(JNIEnv* env,jclass,jstring id,jstring parentId){
  std::lock_guard<std::mutex> lock(engineMutex);const char*sid=env->GetStringUTFChars(id,nullptr),*sp=env->GetStringUTFChars(parentId,nullptr);auto a=editorIndex.find(sid?sid:""),b=editorIndex.find(sp?sp:"");bool ok=a!=editorIndex.end()&&b!=editorIndex.end()&&a->second!=b->second;if(ok)a->second->SetParent(b->second);if(sid)env->ReleaseStringUTFChars(id,sid);if(sp)env->ReleaseStringUTFChars(parentId,sp);return ok?JNI_TRUE:JNI_FALSE;
