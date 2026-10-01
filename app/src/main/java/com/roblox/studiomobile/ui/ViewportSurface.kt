@@ -11,7 +11,8 @@ class ViewportSurface(
     context: Context,
     graph: SceneGraph,
     private val camera: ViewportCamera,
-    selection: SelectionService
+    selection: SelectionService,
+    properties: com.roblox.studiomobile.core.PropertyStore
 ) : GLSurfaceView(context) {
     private var lastX = 0f
     private var lastY = 0f
@@ -31,7 +32,7 @@ class ViewportSurface(
 
     init {
         setEGLContextClientVersion(2)
-        setRenderer(ViewportRenderer(graph, camera, selection))
+        setRenderer(ViewportRenderer(graph, camera, selection, properties))
         renderMode = RENDERMODE_CONTINUOUSLY
         isFocusable = true
         isFocusableInTouchMode = true
