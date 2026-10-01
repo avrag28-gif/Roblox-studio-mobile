@@ -13,6 +13,7 @@
 #include <vector>
 #include <cstdint>
 #include <string>
+#include <sstream>
 #include "platform/android_lifecycle.h"
 
 static rsm::AndroidLifecycle lifecycle;
@@ -37,17 +38,6 @@ struct StructuralSnapshot {
 static std::unordered_map<std::string,StructuralSnapshot> structuralSnapshots;
 static std::uint64_t nextStructuralToken=1;
 
-static void CollectSnapshotIds(const rsm::Instance*src,rsm::Instance*copy,const std::string&rootId,std::vector<std::pair<const rsm::Instance*,std::string>>&out){
- if(!src||!copy)return;
- out.push_back({copy,src==src?rootId:""});
- auto sc=src->GetChildren(),cc=copy->GetChildren();
- for(std::size_t i=0;i<sc.size()&&i<cc.size();++i){
-  std::string id;
-  auto it=editorIndex.find(""); (void)it;
-  CollectSnapshotIds(sc[i],cc[i],id,out);
- }
-}
-
 static void CollectSnapshotIdsWithSource(const rsm::Instance*src,rsm::Instance*copy,const std::string&rootId,std::vector<std::pair<const rsm::Instance*,std::string>>&out){
  if(!src||!copy)return;
  out.push_back({copy,rootId});
@@ -67,7 +57,7 @@ static void RecordStructure(const std::string&payload){
  if(!applyingHistory)changeHistory.Push({"","__STRUCTURE__",0,0,payload});
 }
 
-static bool RestoreStructural(const rsm::ChangeHistory::Command&cmd,bool undo){
+static bool IsInSubtree(const rsm::Instance*root,const rsm::Instance*node){\n if(!root||!node)return false; if(root==node)return true; for(auto*x:root->GetDescendants())if(x==node)return true; return false;\n}\n\nstatic bool RestoreStructural(const rsm::ChangeHistory::Command&cmd,bool undo){
  std::vector<std::string> f;std::string part;std::stringstream ss(cmd.payload);
  while(std::getline(ss,part,'|'))f.push_back(part);
  if(f.size()<4)return false;
@@ -99,15 +89,11 @@ static bool RestoreStructural(const rsm::ChangeHistory::Command&cmd,bool undo){
  }
  auto it=editorIndex.find(id);
  if(it==editorIndex.end()||it->second==workspace)return false;
- it->second->Destroy();
- for(auto i=editorIndex.begin();i!=editorIndex.end();){
-  bool inside=false;
-  if(i->second==nullptr){inside=true;}
-  else {
-   for(const auto&pair:sit->second.ids)if(i->second==pair.first){inside=true;break;}
-  }
-  if(inside||i->first==id)i=editorIndex.erase(i);else ++i;
- }
+ rsm::Instance*root=it->second;
+ std::vector<std::string>removeIds;
+ for(const auto&e:editorIndex)if(IsInSubtree(root,e.second))removeIds.push_back(e.first);
+ root->Destroy();
+ for(const auto&rid:removeIds)editorIndex.erase(rid);
  return true;
 }
 
@@ -174,8 +160,11 @@ extern "C" JNIEXPORT jboolean JNICALL Java_com_rsm_mobile_MainActivity_nativeDel
   rsm::Instance*raw=it->second;std::string parentId="";if(raw->Parent())for(const auto&e:editorIndex)if(e.second==raw->Parent()){parentId=e.first;break;}
   auto snap=raw->Clone();if(!snap)ok=false;else{
    std::string token="S"+std::to_string(nextStructuralToken++);StructuralSnapshot ss;ss.id=sid?sid:"";ss.parentId=parentId;ss.tree=std::move(snap);CollectSnapshotIdsWithSource(raw,ss.tree.get(),ss.id,ss.ids);structuralSnapshots.emplace(token,std::move(ss));
-   RecordStructure(MakeStructurePayload("DELETE",sid?sid:"",parentId,token));raw->Destroy();
-   for(auto i=editorIndex.begin();i!=editorIndex.end();){bool inside=false;for(const auto&pair:structuralSnapshots[token].ids)if(i->second==pair.first){inside=true;break;}if(inside||i->first==(sid?sid:""))i=editorIndex.erase(i);else ++i;}
+   RecordStructure(MakeStructurePayload("DELETE",sid?sid:"",parentId,token));
+   std::vector<std::string>removeIds;
+   for(const auto&e:editorIndex)if(IsInSubtree(raw,e.second))removeIds.push_back(e.first);
+   raw->Destroy();
+   for(const auto&rid:removeIds)editorIndex.erase(rid);
   }
  }
  if(sid)env->ReleaseStringUTFChars(id,sid);return ok?JNI_TRUE:JNI_FALSE;
