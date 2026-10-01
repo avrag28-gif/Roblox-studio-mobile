@@ -165,13 +165,15 @@ public:
   for(auto*i:targets){
    if(!i)continue;
    const bool topLevel=std::none_of(targets.begin(),targets.end(),[i](Instance*x){if(!x||x==i)return false;for(auto*p=x->Parent();p;p=p->Parent())if(p==i)return true;return false;});
-   if(topLevel)gizmo_.Apply(*i,delta);
+   (void)i;
   }
-  for(auto*i:targets){
-   if(!i)continue;
+  std::vector<Instance*> group;
+  for(auto*i:targets)if(i){
    const bool topLevel=std::none_of(targets.begin(),targets.end(),[i](Instance*x){if(!x||x==i)return false;for(auto*p=x->Parent();p;p=p->Parent())if(p==i)return true;return false;});
-   if(topLevel){auto a=CaptureTransform(*i);after.insert(after.end(),a.begin(),a.end());}
+   if(topLevel)group.push_back(i);
   }
+  gizmo_.ApplyGroup(group,delta);
+  for(auto*i:group){auto a=CaptureTransform(*i);after.insert(after.end(),a.begin(),a.end());}
   RecordTransformDiff(before,after);
   RebuildRenderWorld();
  }
