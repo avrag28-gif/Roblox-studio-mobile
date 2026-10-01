@@ -8,6 +8,7 @@ import com.roblox.studiomobile.editor.*
 class StudioScreen(private val context:Context,private val runtime:CoreRuntime){
  private val explorer=ExplorerModel(runtime.dataModel)
  private val controller=ExplorerController(runtime)
+ private val transform=TransformController(runtime)
  private val scene=SceneSynchronizer(runtime)
  private val list=LinearLayout(context).apply{orientation=LinearLayout.VERTICAL}
  private val properties=LinearLayout(context).apply{orientation=LinearLayout.VERTICAL}
@@ -19,6 +20,9 @@ class StudioScreen(private val context:Context,private val runtime:CoreRuntime){
   toolbar.addView(Button(context).apply{text="Part";setOnClickListener{create("Part")}},LinearLayout.LayoutParams(0,52,1f))
   toolbar.addView(Button(context).apply{text="Undo";setOnClickListener{runtime.transactions.undo();refresh()}},LinearLayout.LayoutParams(0,52,1f))
   toolbar.addView(Button(context).apply{text="Redo";setOnClickListener{runtime.transactions.redo();refresh()}},LinearLayout.LayoutParams(0,52,1f))
+  toolbar.addView(Button(context).apply{text="Move";setOnClickListener{transform.tool=TransformTool.Move}},LinearLayout.LayoutParams(0,52,1f))
+  toolbar.addView(Button(context).apply{text="Scale";setOnClickListener{transform.tool=TransformTool.Scale}},LinearLayout.LayoutParams(0,52,1f))
+  toolbar.addView(Button(context).apply{text="Select";setOnClickListener{transform.tool=TransformTool.Select}},LinearLayout.LayoutParams(0,52,1f))
   toolbar.addView(Button(context).apply{text="Delete";setOnClickListener{selected?.let{controller.delete(it);selected=null;refresh()}}},LinearLayout.LayoutParams(0,52,1f))
   root.addView(toolbar,LinearLayout.LayoutParams(-1,60))
   val body=LinearLayout(context).apply{orientation=LinearLayout.HORIZONTAL}
@@ -33,6 +37,7 @@ class StudioScreen(private val context:Context,private val runtime:CoreRuntime){
   val camera=ViewportCamera()
   val surface=ViewportSurface(context,scene.graph,camera)
   surface.onPicked={select(it)}
+  surface.onDrag={dx,dy->selected?.let{if(transform.tool!=TransformTool.Select)transform.applyScreenDelta(it,dx,dy)}}
   frame.addView(surface,FrameLayout.LayoutParams(-1,-1))
   return frame
  }
