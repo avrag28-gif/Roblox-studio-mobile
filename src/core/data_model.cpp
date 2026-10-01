@@ -9,6 +9,16 @@ void DataModel::InitializeDefaultServices(){
 }
 Instance*DataModel::GetService(const std::string&n){auto i=services_.find(n);return i==services_.end()?nullptr:i->second;}
 const Instance*DataModel::GetService(const std::string&n)const{auto i=services_.find(n);return i==services_.end()?nullptr:i->second;}
+void DataModel::ReplaceContentsFrom(const DataModel&source){
+ InitializeDefaultServices();
+ for(const auto&entry:services_){
+  auto*dst=entry.second;
+  const auto*src=source.GetService(entry.first);
+  if(!src)continue;
+  for(auto*child:dst->GetChildren())child->Destroy();
+  for(auto*child:src->GetChildren())if(auto copy=child->Clone())Instance::SetParent(std::move(copy),dst);
+ }
+}
 std::unique_ptr<Instance>DataModel::Clone()const{
  auto c=std::make_unique<DataModel>();
  c->SetName(Name()); c->SetArchivable(Archivable());
