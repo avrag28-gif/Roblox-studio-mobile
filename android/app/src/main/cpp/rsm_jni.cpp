@@ -87,6 +87,14 @@ extern "C" JNIEXPORT jboolean JNICALL Java_com_rsm_mobile_MainActivity_nativeCre
  rsm::Instance*raw=p.get();rsm::Instance::SetParent(std::move(p),parent);if(sid)editorIndex[sid]=raw;
  if(sid)env->ReleaseStringUTFChars(id,sid);if(sn)env->ReleaseStringUTFChars(name,sn);if(st)env->ReleaseStringUTFChars(type,st);if(sp)env->ReleaseStringUTFChars(parentId,sp);return JNI_TRUE;
 }
+extern "C" JNIEXPORT jstring JNICALL Java_com_rsm_mobile_MainActivity_nativeDuplicateInstance(JNIEnv* env,jclass,jstring id){
+ std::lock_guard<std::mutex> lock(engineMutex); const char* sid=env->GetStringUTFChars(id,nullptr);
+ auto it=editorIndex.find(sid?sid:""); if(it==editorIndex.end()){if(sid)env->ReleaseStringUTFChars(id,sid);return nullptr;}
+ rsm::Instance* src=it->second; auto copy=src->Clone(); if(!copy){if(sid)env->ReleaseStringUTFChars(id,sid);return nullptr;}
+ std::string newId=sid?std::string(sid)+"#copy"+std::to_string(editorIndex.size()+1):"copy";
+ copy->SetName(src->Name()+" Copy"); rsm::Instance* raw=copy.get(); rsm::Instance* parent=src->Parent()?src->Parent():workspace; rsm::Instance::SetParent(std::move(copy),parent); editorIndex[newId]=raw;
+ if(sid)env->ReleaseStringUTFChars(id,sid); return env->NewStringUTF(newId.c_str());
+}
 extern "C" JNIEXPORT jboolean JNICALL Java_com_rsm_mobile_MainActivity_nativeDeleteInstance(JNIEnv* env,jclass,jstring id){
  std::lock_guard<std::mutex> lock(engineMutex);const char*sid=env->GetStringUTFChars(id,nullptr);auto it=editorIndex.find(sid?sid:"");bool ok=it!=editorIndex.end()&&it->second!=workspace;if(ok){it->second->Destroy();editorIndex.erase(it);}if(sid)env->ReleaseStringUTFChars(id,sid);return ok?JNI_TRUE:JNI_FALSE;
 }
