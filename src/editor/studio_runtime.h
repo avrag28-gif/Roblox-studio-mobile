@@ -138,10 +138,25 @@ public:
   bool ok=PropertyAccess::Set(*i,name,value);if(ok)RebuildRenderWorld();return ok;
  }
  void ApplyGizmo(const Vector3&delta){
-  auto*i=selection_.Selected();if(!i)return;
-  auto before=CaptureTransform(*i);
-  gizmo_.Apply(*i,delta);
-  auto after=CaptureTransform(*i);
+  const auto targets=selection_.SelectedAll();
+  if(targets.empty())return;
+  std::vector<NumericState> before,after;
+  for(auto*i:targets){
+   if(!i)continue;
+   const bool topLevel=std::none_of(targets.begin(),targets.end(),[i](Instance*x){return x&&x!=i&&[&](Instance*ancestor){for(auto*p=ancestor->Parent();p;p=p->Parent())if(p==i)return true;return false;}(x);});
+   if(!topLevel)continue;
+   auto b=CaptureTransform(*i);before.insert(before.end(),b.begin(),b.end());
+  }
+  for(auto*i:targets){
+   if(!i)continue;
+   const bool topLevel=std::none_of(targets.begin(),targets.end(),[i](Instance*x){if(!x||x==i)return false;for(auto*p=x->Parent();p;p=p->Parent())if(p==i)return true;return false;});
+   if(topLevel)gizmo_.Apply(*i,delta);
+  }
+  for(auto*i:targets){
+   if(!i)continue;
+   const bool topLevel=std::none_of(targets.begin(),targets.end(),[i](Instance*x){if(!x||x==i)return false;for(auto*p=x->Parent();p;p=p->Parent())if(p==i)return true;return false;});
+   if(topLevel){auto a=CaptureTransform(*i);after.insert(after.end(),a.begin(),a.end());}
+  }
   RecordTransformDiff(before,after);
   RebuildRenderWorld();
  }
