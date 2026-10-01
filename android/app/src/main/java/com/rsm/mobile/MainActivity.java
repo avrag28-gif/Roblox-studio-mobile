@@ -18,7 +18,7 @@ public class MainActivity extends Activity {
 
   enum Mode { SELECT, MOVE, ROTATE, SCALE }
   static class NativeObj {
-  String id,name,type,parent; float x,y,z,sx,sy,sz; float rx,ry,rz; int color=Color.rgb(90,160,240); boolean anchored=true,collide=true,canTouch=true,canQuery=true; float transparency=0,mass=1; int shape=0;
+  String id,name,type,parent; float x,y,z,sx,sy,sz; float rx,ry,rz; int color=Color.rgb(90,160,240); boolean anchored=true,collide=true,canTouch=true,canQuery=true; float transparency=0,mass=1; int shape=0,material=0;
 }
 ArrayList<NativeObj> nativeScene=new ArrayList<>();
 
@@ -34,7 +34,7 @@ void refreshNativeScene(){
       if(s!=null&&s.length()>=3){n.sx=(float)s.optDouble(0);n.sy=(float)s.optDouble(1);n.sz=(float)s.optDouble(2);}
       if(r!=null&&r.length()>=4){n.rx=(float)r.optDouble(0);n.ry=(float)r.optDouble(1);n.rz=(float)r.optDouble(2);}
       if(col!=null&&col.length()>=3)n.color=Color.rgb((int)(255*col.optDouble(0)),(int)(255*col.optDouble(1)),(int)(255*col.optDouble(2)));
-      n.anchored=j.optBoolean("anchored",true);n.collide=j.optBoolean("canCollide",true);n.canTouch=j.optBoolean("canTouch",true);n.canQuery=j.optBoolean("canQuery",true);n.transparency=(float)j.optDouble("transparency",0);n.mass=(float)j.optDouble("mass",1);n.shape=j.optInt("shape",0);nativeScene.add(n);
+      n.anchored=j.optBoolean("anchored",true);n.collide=j.optBoolean("canCollide",true);n.canTouch=j.optBoolean("canTouch",true);n.canQuery=j.optBoolean("canQuery",true);n.transparency=(float)j.optDouble("transparency",0);n.mass=(float)j.optDouble("mass",1);n.shape=j.optInt("shape",0);n.material=j.optInt("material",0);nativeScene.add(n);
     }
   }catch(Exception e){append("ERROR","Native snapshot parse: "+e.getMessage());}
 }
@@ -134,7 +134,7 @@ static class Obj {
   void pullNative(){refreshNativeScene();applyNativeSceneToEditor();refreshExplorer();refreshProps();viewport.invalidate();}
   void applyNativeSceneToEditor(){
     String keep=selected==null?null:selected.id; ArrayList<Obj> next=new ArrayList<>();
-    for(NativeObj n:nativeScene){Obj o=new Obj(n.name);o.id=n.id;o.type=n.type;o.parent=n.parent;o.x=n.x;o.y=n.y;o.z=n.z;o.sx=n.sx;o.sy=n.sy;o.sz=n.sz;o.rx=n.rx;o.ry=n.ry;o.rz=n.rz;o.color=n.color;o.anchored=n.anchored;o.collide=n.collide;o.canTouch=n.canTouch;o.canQuery=n.canQuery;o.transparency=n.transparency;o.mass=n.mass;o.shape=n.shape;next.add(o);}
+    for(NativeObj n:nativeScene){Obj o=new Obj(n.name);o.id=n.id;o.type=n.type;o.parent=n.parent;o.x=n.x;o.y=n.y;o.z=n.z;o.sx=n.sx;o.sy=n.sy;o.sz=n.sz;o.rx=n.rx;o.ry=n.ry;o.rz=n.rz;o.color=n.color;o.anchored=n.anchored;o.collide=n.collide;o.canTouch=n.canTouch;o.canQuery=n.canQuery;o.transparency=n.transparency;o.mass=n.mass;o.shape=n.shape;o.material=n.material;next.add(o);}
     objects.clear();objects.addAll(next);selected=null;if(keep!=null)for(Obj o:objects)if(keep.equals(o.id)){selected=o;break;}
   }
   void syncNativeScene(){ if(nativeViewport==null)return; float[] data=new float[objects.size()*14]; String[] ids=new String[objects.size()]; String[] names=new String[objects.size()]; String[] types=new String[objects.size()]; String[] parents=new String[objects.size()]; int i=0,k=0; for(Obj o:objects){data[i++]=o.x;data[i++]=o.y;data[i++]=o.z;data[i++]=o.sx;data[i++]=o.sy;data[i++]=o.sz;data[i++]=o.rx;data[i++]=o.ry;data[i++]=o.rz;data[i++]=Color.red(o.color)/255f;data[i++]=Color.green(o.color)/255f;data[i++]=Color.blue(o.color)/255f;data[i++]=o.anchored?1:0;data[i++]=o.collide?1:0;ids[k]=o.id;names[k]=o.name;types[k]=o.type;parents[k]=o.parent;k++;} nativeSyncScene(data,ids,names,types,parents); }
