@@ -225,7 +225,7 @@ extern "C" JNIEXPORT jboolean JNICALL Java_com_rsm_mobile_MainActivity_nativeSet
   StructuralSnapshot ss;ss.id=sidv;ss.parentId=oldParent;ss.tree=std::move(snap);
   if(ss.tree)CollectSnapshotIdsWithSource(child,ss.tree.get(),sidv,ss.ids);
   structuralSnapshots.emplace(token,std::move(ss));
-  child->SetParent(parent);
+  rsm::ReparentPreserveWorld(*child,*parent);
   RecordStructure(MakeStructurePayload("REPARENT",sidv,spv,token));
  }
  if(sid)env->ReleaseStringUTFChars(id,sid);if(sp)env->ReleaseStringUTFChars(parentId,sp);
