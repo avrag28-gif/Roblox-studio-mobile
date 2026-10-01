@@ -1,5 +1,6 @@
 #pragma once
 #include "../core/base_part.h"
+#include "../core/class_system.h"
 #include <string>
 #include <variant>
 #include <vector>
@@ -9,6 +10,7 @@ class PropertyPanel {
 public:
  static std::vector<PropertyField> Describe(const Instance&i){
   std::vector<PropertyField>o={{"Name","string",true},{"Archivable","bool",true}};
+  if(dynamic_cast<const Model*>(&i))o.push_back({"Pivot","CFrame",true});
   if(auto*p=dynamic_cast<const BasePart*>(&i)){
    o.push_back({"Position","Vector3",true});o.push_back({"CFrame","CFrame",true});o.push_back({"Size","Vector3",true});
    o.push_back({"Color","Color3",true});o.push_back({"Transparency","float",true});o.push_back({"Anchored","bool",true});
