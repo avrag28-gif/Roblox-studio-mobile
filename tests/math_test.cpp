@@ -37,6 +37,14 @@ int main(){
  assert(near(nestedRaw->Pivot().position.x,10));
  assert(near(nestedPartRaw->Position().x,11));
 
+ // Nested model rotation and translation must propagate to its parts exactly once.
+ Model rotated;
+ rotated.SetPivot(CFrame({0,0,0},Quaternion::FromAxisAngle({0,1,0},3.14159265358979323846f/2)));
+ auto rp=std::make_unique<Part>(); rp->SetCFrame(CFrame({2,0,0})); auto*rpRaw=rp.get();
+ Instance::SetParent(std::move(rp),&rotated);
+ rotated.SetPivot(CFrame({5,0,0},Quaternion::FromAxisAngle({0,1,0},3.14159265358979323846f/2)));
+ assert(near(rpRaw->Position().x,5)); assert(near(rpRaw->Position().z,-2));
+
  Model target;
  target.SetPivot(CFrame({20,0,0}));
  auto reparented=std::make_unique<Part>();
