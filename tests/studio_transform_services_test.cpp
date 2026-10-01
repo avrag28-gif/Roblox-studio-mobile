@@ -31,6 +31,15 @@ int main(){
  assert(studio.Redo());
  assert(near(WorldPosition(*created).x,start.x+3));
 
+ auto p2=InstanceFactory::New("Part");p2->SetName("Second");p2->SetPosition({10,0,0});auto*raw2=p2.get();Instance::SetParent(std::move(p2),studio.Game().Workspace());
+ studio.Selection().Select(created);studio.Selection().Add(raw2);
+ studio.Gizmo().SetMode(GizmoMode::Move);studio.Gizmo().SetAxis(GizmoAxis::X);studio.Gizmo().SetSpace(TransformSpace::World);
+ const auto a0=WorldPosition(*created),b0=WorldPosition(*raw2);
+ studio.ApplyGizmo({2,0,0});
+ assert(near(WorldPosition(*created).x,a0.x+2)&&near(WorldPosition(*raw2).x,b0.x+2));
+ assert(studio.Undo());
+ assert(near(WorldPosition(*created).x,a0.x)&&near(WorldPosition(*raw2).x,b0.x));
+
  Model parentA,parentB;
  parentA.SetPivot(CFrame({10,0,0}));
  parentB.SetPivot(CFrame({100,0,0}));
