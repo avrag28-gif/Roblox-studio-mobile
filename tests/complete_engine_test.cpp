@@ -25,7 +25,7 @@ int main(){
  PropertyRegistry::Instance().RegisterBuiltins();assert(PropertyRegistry::Instance().For("Part"));
  auto* part=dynamic_cast<BasePart*>(raw);assert(part);part->SetPosition({1,3,0});part->SetSize({2,2,2});
  PhysicsWorld physics;physics.Step(.016f,game);RenderWorld render;render.Build(game);assert(render.VisibleCount()==1);
- TransformController gizmo;gizmo.Begin(part,TransformMode::Move,GizmoAxis::X);gizmo.Apply(1,0);gizmo.End();assert(part->Position().x>1);
+ TransformController gizmo;gizmo.Begin(part,TransformMode::Move,GizmoAxis::X);gizmo.Apply(1,0);gizmo.End();assert(part->Position().x>1); Quaternion ninety=Quaternion::FromAxisAngle({0,1,0},1.5707963f);part->SetCFrame(CFrame(part->Position(),ninety));auto before=part->Position();gizmo.Begin(part,TransformMode::Move,GizmoAxis::X,TransformSpace::Local);gizmo.Apply(1,0);gizmo.End();assert(part->Position().z>before.z);
  ScriptSandbox sandbox;std::string err;assert(sandbox.ValidateSource("print('ok')",err));assert(!sandbox.ValidateSource("io.open('x')",err));
  CredentialStore creds;assert(creds.Put("session","opaque"));assert(creds.Get("session")=="opaque");creds.Clear();
  ReplicationRuntime repl;repl.Queue("Workspace.TestPart","Position","2,3,0");ReplicationMessage m;assert(repl.Pop(m));assert(repl.ApplyOrdered(m,[](const auto&){return true;}));
