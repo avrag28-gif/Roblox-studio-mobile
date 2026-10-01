@@ -24,6 +24,31 @@ class GizmoPicker {
         return if (denom < 0.000001f) e / c else (a * e - b * f) / denom
     }
 
+    fun pickRotateRing(ray: Ray, origin: Vec3, radius: Float): GizmoAxis {
+        val axes = listOf(
+            GizmoAxis.X to Vec3(1f, 0f, 0f),
+            GizmoAxis.Y to Vec3(0f, 1f, 0f),
+            GizmoAxis.Z to Vec3(0f, 0f, 1f)
+        )
+        var best = GizmoAxis.None
+        var bestError = Float.POSITIVE_INFINITY
+        for ((axis, normal) in axes) {
+            val denom = dot(ray.direction, normal)
+            if (abs(denom) < 0.00001f) continue
+            val t = dot(origin - ray.origin, normal) / denom
+            if (t < 0f) continue
+            val hit = ray.origin + ray.direction * t
+            val d = distance(hit, origin)
+            val error = abs(d - radius)
+            val threshold = radius * 0.18f + 0.12f
+            if (error <= threshold && error < bestError) {
+                bestError = error
+                best = axis
+            }
+        }
+        return best
+    }
+
     fun pick(ray: Ray, origin: Vec3, length: Float): GizmoAxis {
         val axes = listOf(
             GizmoAxis.X to Vec3(1f, 0f, 0f),
