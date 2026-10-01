@@ -103,13 +103,13 @@ public class MainActivity extends Activity {
   }
 
   void refresh(){refreshExplorer();refreshProps();syncNativeScene();viewport.invalidate();status.setText((playing?"●  PLAY":"●  EDIT")+"   •   "+objects.size()+" objects"+(dirty?"   •   Unsaved":"   •   Saved"));}
-  void syncNativeScene(){ if(nativeViewport==null)return; float[] data=new float[objects.size()*13]; int i=0; for(Obj o:objects){data[i++]=o.x;data[i++]=o.y;data[i++]=o.z;data[i++]=o.sx;data[i++]=o.sy;data[i++]=o.sz;data[i++]=o.rx;data[i++]=o.ry;data[i++]=o.rz;data[i++]=Color.red(o.color)/255f;data[i++]=Color.green(o.color)/255f;data[i++]=Color.blue(o.color)/255f;data[i++]=o.anchored?1:0;} nativeSyncScene(data); }
+  void syncNativeScene(){ if(nativeViewport==null)return; float[] data=new float[objects.size()*13]; String[] names=new String[objects.size()]; String[] types=new String[objects.size()]; int i=0,k=0; for(Obj o:objects){data[i++]=o.x;data[i++]=o.y;data[i++]=o.z;data[i++]=o.sx;data[i++]=o.sy;data[i++]=o.sz;data[i++]=o.rx;data[i++]=o.ry;data[i++]=o.rz;data[i++]=Color.red(o.color)/255f;data[i++]=Color.green(o.color)/255f;data[i++]=Color.blue(o.color)/255f;data[i++]=o.anchored?1:0;names[k]=o.name;types[k]=o.type.equals("Model")?"Model":"Part";k++;} nativeSyncScene(data,names,types); }
   static native void nativeSurfaceCreated();
   static native void nativeSurfaceChanged(int w,int h);
   static native void nativeSurfaceDraw();
   static native void nativeSurfaceDestroyed();
   static native void nativeLifecycle(int state);
-  static native void nativeSyncScene(float[] data);
+  static native void nativeSyncScene(float[] data, String[] names, String[] types);
   static native void nativeCameraOrbit(float yaw,float pitch);
   static native void nativeCameraZoom(float delta);
   static native boolean nativeRunScript(String source);
