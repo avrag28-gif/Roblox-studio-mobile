@@ -15,6 +15,9 @@ class ViewportSurface(
     private var lastY = 0f
     private var lastSpan = 0f
     private var gesture = 0
+    var onPicked: ((com.roblox.studiomobile.core.Instance) -> Unit)? = null
+    private var downX = 0f
+    private var downY = 0f
 
     init {
         setEGLContextClientVersion(2)
@@ -29,6 +32,8 @@ class ViewportSurface(
             MotionEvent.ACTION_DOWN -> {
                 lastX = event.x
                 lastY = event.y
+                downX = event.x
+                downY = event.y
                 gesture = 1
                 return true
             }
@@ -57,7 +62,16 @@ class ViewportSurface(
                 gesture = if (event.pointerCount > 2) 2 else 1
                 return true
             }
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+            MotionEvent.ACTION_UP -> {
+                if (gesture == 1 && kotlin.math.abs(event.x-downX) < 12f && kotlin.math.abs(event.y-downY) < 12f) {
+                    val ray = camera.ray(event.x,event.y,width,height)
+                    val hit = com.roblox.studiomobile.editor.ViewportPicker(graph).pick(ray)
+                    if(hit != null) onPicked?.invoke(hit)
+                }
+                gesture = 0
+                return true
+            }
+            MotionEvent.ACTION_CANCEL -> {
                 gesture = 0
                 return true
             }
