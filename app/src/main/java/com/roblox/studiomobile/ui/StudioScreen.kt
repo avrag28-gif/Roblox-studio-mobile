@@ -28,13 +28,10 @@ class StudioScreen(private val context:Context,private val runtime:CoreRuntime){
   root.addView(body,LinearLayout.LayoutParams(-1,0,1f))
   return root
  }
- private fun viewport():ScrollView{
-  val box=LinearLayout(context).apply{orientation=LinearLayout.VERTICAL;gravity=Gravity.CENTER}
-  box.addView(TextView(context).apply{
-   text="3D VIEWPORT\n\nNodes: "+scene.graph.all().size+"\nParts: "+scene.graph.all().count{it.instance.className=="Part"}
-   gravity=Gravity.CENTER;textSize=18f;setTextColor(Color.LTGRAY)
-  },LinearLayout.LayoutParams(-1,-1))
-  return ScrollView(context).apply{addView(box)}
+ private fun viewport():FrameLayout{
+  val frame=FrameLayout(context)
+  frame.addView(ViewportSurface(context,scene.graph,ViewportCamera()),FrameLayout.LayoutParams(-1,-1))
+  return frame
  }
  private fun targetParent():Instance=selected?:runtime.services.get<Instance>("Workspace")?:runtime.dataModel
  private fun create(className:String){val i=controller.create(className,targetParent());refresh();select(i)}
