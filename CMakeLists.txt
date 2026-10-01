@@ -23,7 +23,8 @@ set(RSM_TESTS
   rsm_release_systems_test
   rsm_asset_cache_gltf_test
   rsm_property_access_test
-  rsm_studio_runtime_test)
+  rsm_studio_runtime_test
+  rsm_scene_codec_test)
 add_executable(rsm_smoke tests/smoke_test.cpp)
 add_executable(rsm_core_instance_test tests/core_instance_test.cpp)
 add_executable(rsm_engine_smoke_test tests/engine_smoke_test.cpp)
@@ -39,6 +40,7 @@ add_executable(rsm_release_systems_test tests/release_systems_test.cpp)
 add_executable(rsm_asset_cache_gltf_test tests/asset_cache_gltf_test.cpp)
 add_executable(rsm_property_access_test tests/property_access_test.cpp)
 add_executable(rsm_studio_runtime_test tests/studio_runtime_test.cpp)
+add_executable(rsm_scene_codec_test tests/scene_codec_test.cpp)
 foreach(t IN LISTS RSM_TESTS)
  target_link_libraries(${t} PRIVATE rsm_core)
 endforeach()
@@ -58,6 +60,7 @@ add_test(NAME release_systems COMMAND rsm_release_systems_test)
 add_test(NAME asset_cache_gltf COMMAND rsm_asset_cache_gltf_test)
 add_test(NAME property_access COMMAND rsm_property_access_test)
 add_test(NAME studio_runtime COMMAND rsm_studio_runtime_test)
+add_test(NAME scene_codec COMMAND rsm_scene_codec_test)
 if(RSM_ENABLE_LUAU)
  include(FetchContent)
  FetchContent_Declare(luau GIT_REPOSITORY https://github.com/luau-lang/luau.git GIT_TAG master)
