@@ -30,6 +30,7 @@ static std::unordered_map<std::string, rsm::Instance*> editorIndex;
 static rsm::PhysicsWorld runtimePhysics;
 static rsm::ChangeHistory changeHistory;
 static bool applyingHistory=false;
+static bool ApplyNativeName(const std::string&id,const std::string&name){auto it=editorIndex.find(id);if(it==editorIndex.end()||it->second==workspace)return false;it->second->SetName(name);return true;}
 
 struct StructuralSnapshot {
  std::string id;
@@ -214,7 +215,7 @@ extern "C" JNIEXPORT jboolean JNICALL Java_com_rsm_mobile_MainActivity_nativeSet
  std::lock_guard<std::mutex> lock(engineMutex);
  const char*sid=env->GetStringUTFChars(id,nullptr),*sn=env->GetStringUTFChars(name,nullptr);
  auto it=editorIndex.find(sid?sid:""); bool ok=it!=editorIndex.end()&&it->second!=workspace;
- if(ok) it->second->SetName(sn?sn:"");
+ if(ok){std::string old=it->second->Name();std::string next=sn?sn:"";it->second->SetName(next);if(!applyingHistory&&old!=next){rsm::ChangeHistory::Command cmd;cmd.id=sid?sid:"";cmd.property="__NAME__";cmd.beforeString=old;cmd.afterString=next;changeHistory.Push(std::move(cmd));}}
  if(sid)env->ReleaseStringUTFChars(id,sid);if(sn)env->ReleaseStringUTFChars(name,sn);
  return ok?JNI_TRUE:JNI_FALSE;
 }
@@ -296,6 +297,7 @@ extern "C" JNIEXPORT jboolean JNICALL Java_com_rsm_mobile_MainActivity_nativeUnd
  if(changeHistory.CanUndo()){
   ok=changeHistory.UndoAny(
    [&](const std::string&id,const std::string&p,double v){return ApplyNativeProperty(id,p,v);},
+   [&](const std::string&id,const std::string&,const std::string&v){return ApplyNativeName(id,v);},
    [&](const rsm::ChangeHistory::Command&c){return RestoreStructural(c,true);}
   );
  }
@@ -306,6 +308,7 @@ extern "C" JNIEXPORT jboolean JNICALL Java_com_rsm_mobile_MainActivity_nativeRed
  if(changeHistory.CanRedo()){
   ok=changeHistory.RedoAny(
    [&](const std::string&id,const std::string&p,double v){return ApplyNativeProperty(id,p,v);},
+   [&](const std::string&id,const std::string&,const std::string&v){return ApplyNativeName(id,v);},
    [&](const rsm::ChangeHistory::Command&c){return RestoreStructural(c,false);}
   );
  }
