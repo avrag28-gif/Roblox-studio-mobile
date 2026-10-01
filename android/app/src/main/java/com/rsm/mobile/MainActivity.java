@@ -179,7 +179,7 @@ static class Obj {
     TextView name=text(selected.name+"   ["+selected.type+"]",17);props.addView(name,new LinearLayout.LayoutParams(-1,dp(46)));
     section("TRANSFORM");
     row3("Position",selected.x,selected.y,selected.z,(a,b,c)->{selected.x=a;selected.y=b;selected.z=c;changed();});
-    row3("Rotation",selected.rx,selected.ry,selected.rz,(a,b,c)->{selected.rx=a;selected.ry=b;selected.rz=c;changed();});
+    row3("Rotation",(float)Math.toDegrees(selected.rx),(float)Math.toDegrees(selected.ry),(float)Math.toDegrees(selected.rz),(a,b,c)->{selected.rx=(float)Math.toRadians(a);selected.ry=(float)Math.toRadians(b);selected.rz=(float)Math.toRadians(c);changed();});
     row3("Size",selected.sx,selected.sy,selected.sz,(a,b,c)->{selected.sx=Math.max(.1f,a);selected.sy=Math.max(.1f,b);selected.sz=Math.max(.1f,c);changed();});
     section("APPEARANCE");
     EditText nameEdit=edit(selected.name);nameEdit.setHint("Name");nameEdit.setOnFocusChangeListener((v,has)->{if(!has&&selected!=null&&!nameEdit.getText().toString().trim().isEmpty()){selected.name=nameEdit.getText().toString().trim();nativeSetName(selected.id,selected.name);changed();}});props.addView(labelRow("Name",nameEdit));
@@ -200,7 +200,7 @@ static class Obj {
   void row3(String label,float a,float b,float c,Triple cb){
     LinearLayout line=new LinearLayout(this);line.setOrientation(LinearLayout.HORIZONTAL);line.addView(text(label,11),new LinearLayout.LayoutParams(dp(72),dp(48)));
     EditText x=number(a),y=number(b),z=number(c);line.addView(x,new LinearLayout.LayoutParams(0,dp(48),1));line.addView(y,new LinearLayout.LayoutParams(0,dp(48),1));line.addView(z,new LinearLayout.LayoutParams(0,dp(48),1));
-    TextWatcherCommit w=new TextWatcherCommit(()->{float vx=val(x,a),vy=val(y,b),vz=val(z,c);cb.go(vx,vy,vz);if(selected!=null){if(label.equals("Position")){nativeSetProperty(selected.id,"PositionX",vx);nativeSetProperty(selected.id,"PositionY",vy);nativeSetProperty(selected.id,"PositionZ",vz);}else if(label.equals("Size")){nativeSetProperty(selected.id,"SizeX",vx);nativeSetProperty(selected.id,"SizeY",vy);nativeSetProperty(selected.id,"SizeZ",vz);}else if(label.equals("Rotation")){nativeSetProperty(selected.id,"RotationX",vx);nativeSetProperty(selected.id,"RotationY",vy);nativeSetProperty(selected.id,"RotationZ",vz);}}});x.addTextChangedListener(w);y.addTextChangedListener(w);z.addTextChangedListener(w);props.addView(line);
+    TextWatcherCommit w=new TextWatcherCommit(()->{float vx=val(x,a),vy=val(y,b),vz=val(z,c);cb.go(vx,vy,vz);if(selected!=null){if(label.equals("Position")){nativeSetProperty(selected.id,"PositionX",vx);nativeSetProperty(selected.id,"PositionY",vy);nativeSetProperty(selected.id,"PositionZ",vz);}else if(label.equals("Size")){nativeSetProperty(selected.id,"SizeX",vx);nativeSetProperty(selected.id,"SizeY",vy);nativeSetProperty(selected.id,"SizeZ",vz);}else if(label.equals("Rotation")){nativeSetProperty(selected.id,"RotationX",(float)Math.toRadians(vx));nativeSetProperty(selected.id,"RotationY",(float)Math.toRadians(vy));nativeSetProperty(selected.id,"RotationZ",(float)Math.toRadians(vz));}}});x.addTextChangedListener(w);y.addTextChangedListener(w);z.addTextChangedListener(w);props.addView(line);
   }
   float val(EditText e,float d){try{return Float.parseFloat(e.getText().toString());}catch(Exception ex){return d;}}
   EditText number(float n){EditText e=edit(String.format(Locale.US,"%.2f",n));e.setInputType(2|8192);return e;}
