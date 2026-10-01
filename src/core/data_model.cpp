@@ -1,6 +1,8 @@
 #include "data_model.h"
 #include "class_system.h"
 #include <array>
+#include <sstream
+#include <vector>
 namespace rsm{
 
 DataModel::DataModel():Instance("DataModel"){
@@ -26,6 +28,29 @@ void DataModel::InitializeDefaultServices(){
  add(std::make_unique<StarterPack>());
  add(std::make_unique<StarterPlayer>());
  add(std::make_unique<SoundService>());
+}
+
+Instance*DataModel::ResolvePath(const std::string&path){
+ if(path.empty()||path=="game")return this;
+ std::string token; Instance*current=this; std::istringstream in(path);
+ while(std::getline(in,token,'.')){
+  if(token.empty()||token=="game")continue;
+  if(current==this){current=GetService(token);}
+  else current=current->FindFirstChild(token,false);
+  if(!current)return nullptr;
+ }
+ return current;
+}
+const Instance*DataModel::ResolvePath(const std::string&path)const{
+ if(path.empty()||path=="game")return this;
+ std::string token; const Instance*current=this; std::istringstream in(path);
+ while(std::getline(in,token,'.')){
+  if(token.empty()||token=="game")continue;
+  if(current==this)current=GetService(token);
+  else current=current->FindFirstChild(token,false);
+  if(!current)return nullptr;
+ }
+ return current;
 }
 
 Instance*DataModel::GetService(const std::string&n){
