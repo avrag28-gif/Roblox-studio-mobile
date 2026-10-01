@@ -9,6 +9,10 @@ enum class TransformAxis { Screen, X, Y, Z }
 class TransformController(private val runtime: CoreRuntime) {
     var tool = TransformTool.Select
     var axis = TransformAxis.Screen
+    var snapEnabled = false
+    var moveSnap = 1f
+    var scaleSnap = 0.5f
+    var rotateSnap = 15f
 
     fun beginGesture() {
         if (tool != TransformTool.Select) runtime.transactions.beginBatch()
@@ -52,7 +56,7 @@ class TransformController(private val runtime: CoreRuntime) {
                     TransformAxis.Z -> Vec3(p.x, p.y, p.z + delta)
                     TransformAxis.Screen -> p
                 }
-                runtime.properties.set(instance, "Position", next)
+                runtime.properties.set(instance, "Position", snapPosition(next))
                 true
             }
             TransformTool.Scale -> {
@@ -64,7 +68,7 @@ class TransformController(private val runtime: CoreRuntime) {
                     TransformAxis.Z -> Vec3(s.x, s.y, (s.z + amount).coerceAtLeast(0.1f))
                     TransformAxis.Screen -> s
                 }
-                runtime.properties.set(instance, "Size", next)
+                runtime.properties.set(instance, "Size", snapSize(next))
                 true
             }
             TransformTool.Rotate -> {
@@ -75,7 +79,7 @@ class TransformController(private val runtime: CoreRuntime) {
                     TransformAxis.Z -> Vec3(r.x, r.y, r.z + delta * 35f)
                     TransformAxis.Screen -> r
                 }
-                runtime.properties.set(instance, "Orientation", next)
+                runtime.properties.set(instance, "Orientation", snapRotation(next))
                 true
             }
             TransformTool.Select -> false
@@ -94,12 +98,12 @@ class TransformController(private val runtime: CoreRuntime) {
         return when (tool) {
             TransformTool.Move -> {
                 val p = runtime.properties.get<Vec3>(instance, "Position") ?: Vec3()
-                runtime.properties.set(instance, "Position", moveDelta(p, dx, dy))
+                runtime.properties.set(instance, "Position", snapPosition(moveDelta(p, dx, dy)))
                 true
             }
             TransformTool.Scale -> {
                 val s = runtime.properties.get<Vec3>(instance, "Size") ?: Vec3(4f, 1f, 2f)
-                runtime.properties.set(instance, "Size", scaleDelta(s, dx, dy))
+                runtime.properties.set(instance, "Size", snapSize(scaleDelta(s, dx, dy)))
                 true
             }
             TransformTool.Rotate -> {
@@ -111,12 +115,21 @@ class TransformController(private val runtime: CoreRuntime) {
                     TransformAxis.Z -> Vec3(r.x, r.y, r.z + amount)
                     TransformAxis.Screen -> Vec3(r.x, r.y + amount, r.z)
                 }
-                runtime.properties.set(instance, "Orientation", next)
+                runtime.properties.set(instance, "Orientation", snapRotation(next))
                 true
             }
             TransformTool.Select -> false
         }
     }
+    private fun snap(value: Float, step: Float): Float {
+        if (!snapEnabled || step <= 0f) return value
+        return kotlin.math.round(value / step) * step
+    }
+
+    private fun snapPosition(v: Vec3): Vec3 = Vec3(snap(v.x, moveSnap), snap(v.y, moveSnap), snap(v.z, moveSnap))
+    private fun snapSize(v: Vec3): Vec3 = Vec3(snap(v.x, scaleSnap).coerceAtLeast(0.1f), snap(v.y, scaleSnap).coerceAtLeast(0.1f), snap(v.z, scaleSnap).coerceAtLeast(0.1f))
+    private fun snapRotation(v: Vec3): Vec3 = Vec3(snap(v.x, rotateSnap), snap(v.y, rotateSnap), snap(v.z, rotateSnap))
+
     private fun moveDelta(p: Vec3, dx: Float, dy: Float): Vec3 {
         val amount = dx * 0.025f - dy * 0.025f
         return when (axis) {
