@@ -7,7 +7,7 @@ import com.roblox.studiomobile.core.*
 import com.roblox.studiomobile.editor.*
 class StudioScreen(private val context:Context,private val runtime:CoreRuntime){
  private val explorer=ExplorerModel(runtime.dataModel)
- private val controller=ExplorerController(runtime)
+ private val controller=ExplorerController(runtime)\n private val scene=SceneSynchronizer(runtime)
  private val list=LinearLayout(context).apply{orientation=LinearLayout.VERTICAL}
  private val properties=LinearLayout(context).apply{orientation=LinearLayout.VERTICAL}
  private var selected:Instance?=null
@@ -26,6 +26,14 @@ class StudioScreen(private val context:Context,private val runtime:CoreRuntime){
   body.addView(propertyView(),LinearLayout.LayoutParams(0,-1,0.25f))
   root.addView(body,LinearLayout.LayoutParams(-1,0,1f))
   return root
+ }
+ private fun viewport():ScrollView{
+  val box=LinearLayout(context).apply{orientation=LinearLayout.VERTICAL;gravity=Gravity.CENTER}
+  box.addView(TextView(context).apply{
+   text="3D VIEWPORT\n\nNodes: "+scene.graph.all().size+"\nParts: "+scene.graph.all().count{it.instance.className=="Part"}
+   gravity=Gravity.CENTER;textSize=18f;setTextColor(Color.LTGRAY)
+  },LinearLayout.LayoutParams(-1,-1))
+  return ScrollView(context).apply{addView(box)}
  }
  private fun targetParent():Instance=selected?:runtime.services.get<Instance>("Workspace")?:runtime.dataModel
  private fun create(className:String){val i=controller.create(className,targetParent());refresh();select(i)}
