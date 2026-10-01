@@ -32,7 +32,7 @@ void refreshNativeScene(){
       org.json.JSONArray p=j.optJSONArray("position"),s=j.optJSONArray("size"),r=j.optJSONArray("rotation"),col=j.optJSONArray("color");
       if(p!=null&&p.length()>=3){n.x=(float)p.optDouble(0);n.y=(float)p.optDouble(1);n.z=(float)p.optDouble(2);}
       if(s!=null&&s.length()>=3){n.sx=(float)s.optDouble(0);n.sy=(float)s.optDouble(1);n.sz=(float)s.optDouble(2);}
-      if(r!=null&&r.length()>=4){n.rx=(float)r.optDouble(0);n.ry=(float)r.optDouble(1);n.rz=(float)r.optDouble(2);}
+      if(r!=null&&r.length()>=3){n.rx=(float)r.optDouble(0);n.ry=(float)r.optDouble(1);n.rz=(float)r.optDouble(2);}
       if(col!=null&&col.length()>=3)n.color=Color.rgb((int)(255*col.optDouble(0)),(int)(255*col.optDouble(1)),(int)(255*col.optDouble(2)));
       n.anchored=j.optBoolean("anchored",true);n.collide=j.optBoolean("canCollide",true);n.canTouch=j.optBoolean("canTouch",true);n.canQuery=j.optBoolean("canQuery",true);n.transparency=(float)j.optDouble("transparency",0);n.mass=(float)j.optDouble("mass",1);n.shape=j.optInt("shape",0);n.material=j.optInt("material",0);nativeScene.add(n);
     }
@@ -43,7 +43,7 @@ static class Obj {
     String id,name,type="Part",parent="Workspace";
     float x,y,z,sx=2,sy=2,sz=2,rx,ry,rz;
     int color=Color.rgb(90,160,240);
-    boolean anchored=true,collide=true,canTouch=true,canQuery=true; float transparency=0,mass=1; int shape=0;
+    boolean anchored=true,collide=true,canTouch=true,canQuery=true; float transparency=0,mass=1; int shape=0,material=0;
     Obj(String n){id=UUID.randomUUID().toString();name=n;}
   }
 
@@ -118,7 +118,7 @@ static class Obj {
   }
 
   void addPart(){Obj o=new Obj("Part");o.x=objects.size()*2-2;o.y=1;objects.add(o);if(nativeCreateInstance(o.id,o.name,o.type,o.parent)){nativeSetProperty(o.id,"PositionX",o.x);nativeSetProperty(o.id,"PositionY",o.y);nativeSetProperty(o.id,"PositionZ",o.z);nativeSetProperty(o.id,"SizeX",o.sx);nativeSetProperty(o.id,"SizeY",o.sy);nativeSetProperty(o.id,"SizeZ",o.sz);nativeSetProperty(o.id,"Anchored",1);nativeSetProperty(o.id,"CanCollide",1);}refreshNativeScene();applyNativeSceneToEditor();select(find(o.id));dirty=true;append("INFO","Created Part");}
-  void addModel(){Obj o=new Obj("Model");o.type="Model";o.sx=o.sy=o.sz=4;o.y=2;o.color=Color.rgb(190,100,220);objects.add(o);if(nativeCreateInstance(o.id,o.name,o.type,o.parent)){refreshNativeScene();applyNativeSceneToEditor();}select(find(o.id));dirty=true;append("INFO","Created Model");}
+  void addModel(){Obj o=new Obj("Model");o.type="Model";o.sx=o.sy=o.sz=4;o.y=2;o.color=Color.rgb(190,100,220);objects.add(o);if(nativeCreateInstance(o.id,o.name,o.type,o.parent)){nativeSetProperty(o.id,"PositionX",o.x);nativeSetProperty(o.id,"PositionY",o.y);nativeSetProperty(o.id,"PositionZ",o.z);refreshNativeScene();applyNativeSceneToEditor();}select(find(o.id));dirty=true;append("INFO","Created Model");}
   void togglePlay(Button b){
     playing=!playing;b.setText(playing?"■  Stop":"▶  Play");nativeSetPlaying(playing);status.setText(playing?"●  PLAY   •   runtime scene active":"●  EDIT   •   "+objects.size()+" objects   •   Ready");
     append("INFO",playing?"Play session started from isolated runtime snapshot.":"Play session stopped; editor scene preserved.");viewport.invalidate();
@@ -316,6 +316,6 @@ static class Obj {
       return true;
     }
     Obj hit(float x,float y){String nativeId=nativeRaycastId(x,y,getWidth(),getHeight());if(nativeId!=null){for(Obj o:objects)if(nativeId.equals(o.id))return o;}float cx=getWidth()/2,cy=getHeight()/2,scale=dp(22);for(int i=objects.size()-1;i>=0;i--){Obj o=objects.get(i);float ox=cx+o.x*scale,oy=cy-o.y*scale;if(Math.abs(x-ox)<o.sx*scale/2+dp(12)&&Math.abs(y-oy)<o.sy*scale/2+dp(12))return o;}return null;}
-    void applyGesture(Obj o,float dx,float dy){float scale=dp(22);if(mode==Mode.MOVE){o.x+=dx/scale;o.y-=dy/scale;nativeSetProperty(o.id,"PositionX",o.x);nativeSetProperty(o.id,"PositionY",o.y);}else if(mode==Mode.ROTATE){o.ry+=dx;o.rx+=dy;nativeSetProperty(o.id,"RotationY",o.ry);nativeSetProperty(o.id,"RotationX",o.rx);}else if(mode==Mode.SCALE){o.sx=Math.max(.1f,o.sx+dx/scale);o.sy=Math.max(.1f,o.sy-dy/scale);nativeSetProperty(o.id,"SizeX",o.sx);nativeSetProperty(o.id,"SizeY",o.sy);}changed();}
+    void applyGesture(Obj o,float dx,float dy){float scale=dp(22);if(mode==Mode.MOVE){o.x+=dx/scale;o.y-=dy/scale;nativeSetProperty(o.id,"PositionX",o.x);nativeSetProperty(o.id,"PositionY",o.y);}else if(mode==Mode.ROTATE){float radiansPerPixel=0.01f;o.ry+=dx*radiansPerPixel;o.rx+=dy*radiansPerPixel;nativeSetProperty(o.id,"RotationY",o.ry);nativeSetProperty(o.id,"RotationX",o.rx);}else if(mode==Mode.SCALE){o.sx=Math.max(.1f,o.sx+dx/scale);o.sy=Math.max(.1f,o.sy-dy/scale);nativeSetProperty(o.id,"SizeX",o.sx);nativeSetProperty(o.id,"SizeY",o.sy);}changed();}
   }
 }
