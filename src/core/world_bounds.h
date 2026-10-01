@@ -20,9 +20,9 @@ inline AABB WorldBounds(const BasePart& part) {
     const float azz = 1 - 2*(q.x*q.x + q.y*q.y);
     const auto& s=part.Size();
     const Vector3 h{
-        .5f*(std::fabs(axx)*s.x+std::fabs(ayx)*s.y+std::fabs(azx)*s.z),
-        .5f*(std::fabs(axy)*s.x+std::fabs(ayy)*s.y+std::fabs(azy)*s.z),
-        .5f*(std::fabs(axz)*s.x+std::fabs(ayz)*s.y+std::fabs(azz)*s.z)
+        .5f*(std::fabs(axx)*s.x+std::fabs(axy)*s.y+std::fabs(axz)*s.z),
+        .5f*(std::fabs(ayx)*s.x+std::fabs(ayy)*s.y+std::fabs(ayz)*s.z),
+        .5f*(std::fabs(azx)*s.x+std::fabs(azy)*s.y+std::fabs(azz)*s.z)
     };
     const auto p=WorldCFrame(part).position;
     return {p-h,p+h};
