@@ -13,6 +13,7 @@ class StudioScreen(private val context:Context,private val runtime:CoreRuntime){
  private val list=LinearLayout(context).apply{orientation=LinearLayout.VERTICAL}
  private val properties=LinearLayout(context).apply{orientation=LinearLayout.VERTICAL}
  private var selected:Instance?=null
+ private var surfaceRef:ViewportSurface?=null
  fun view():LinearLayout{
   val root=LinearLayout(context).apply{orientation=LinearLayout.VERTICAL;setBackgroundColor(Color.rgb(24,24,27))}
   val toolbar=LinearLayout(context).apply{orientation=LinearLayout.HORIZONTAL}
@@ -20,10 +21,10 @@ class StudioScreen(private val context:Context,private val runtime:CoreRuntime){
   toolbar.addView(Button(context).apply{text="Part";setOnClickListener{create("Part")}},LinearLayout.LayoutParams(0,52,1f))
   toolbar.addView(Button(context).apply{text="Undo";setOnClickListener{runtime.transactions.undo();refresh()}},LinearLayout.LayoutParams(0,52,1f))
   toolbar.addView(Button(context).apply{text="Redo";setOnClickListener{runtime.transactions.redo();refresh()}},LinearLayout.LayoutParams(0,52,1f))
-  toolbar.addView(Button(context).apply{text="Move";setOnClickListener{transform.tool=TransformTool.Move}},LinearLayout.LayoutParams(0,52,1f))
-  toolbar.addView(Button(context).apply{text="Scale";setOnClickListener{transform.tool=TransformTool.Scale}},LinearLayout.LayoutParams(0,52,1f))
-  toolbar.addView(Button(context).apply{text="Rotate";setOnClickListener{transform.tool=TransformTool.Rotate}} ,LinearLayout.LayoutParams(0,52,1f))
-  toolbar.addView(Button(context).apply{text="Select";setOnClickListener{transform.tool=TransformTool.Select}},LinearLayout.LayoutParams(0,52,1f))
+  toolbar.addView(Button(context).apply{text="Move";setOnClickListener{transform.tool=TransformTool.Move; surfaceRef?.setTransformTool(transform.tool)}},LinearLayout.LayoutParams(0,52,1f))
+  toolbar.addView(Button(context).apply{text="Scale";setOnClickListener{transform.tool=TransformTool.Scale; surfaceRef?.setTransformTool(transform.tool)}},LinearLayout.LayoutParams(0,52,1f))
+  toolbar.addView(Button(context).apply{text="Rotate";setOnClickListener{transform.tool=TransformTool.Rotate; surfaceRef?.setTransformTool(transform.tool)}} ,LinearLayout.LayoutParams(0,52,1f))
+  toolbar.addView(Button(context).apply{text="Select";setOnClickListener{transform.tool=TransformTool.Select; surfaceRef?.setTransformTool(transform.tool)}},LinearLayout.LayoutParams(0,52,1f))
   toolbar.addView(Button(context).apply{text="Delete";setOnClickListener{selected?.let{controller.delete(it);selected=null;refresh()}}},LinearLayout.LayoutParams(0,52,1f))
   root.addView(toolbar,LinearLayout.LayoutParams(-1,60))
   val body=LinearLayout(context).apply{orientation=LinearLayout.HORIZONTAL}
@@ -37,6 +38,7 @@ class StudioScreen(private val context:Context,private val runtime:CoreRuntime){
   val frame=FrameLayout(context)
   val camera=ViewportCamera()
   val surface=ViewportSurface(context,scene.graph,camera,runtime.selection,runtime.properties)
+  surfaceRef=surface
   surface.onPicked={select(it)}
   surface.onTransformGestureStart={transform.beginGesture()}
   surface.onTransformGestureEnd={commit->transform.endGesture(commit)}
