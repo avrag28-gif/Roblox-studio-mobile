@@ -40,14 +40,42 @@ extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeSurface
 extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeCameraOrbit(JNIEnv*,jclass,jfloat yaw,jfloat pitch){camera.Orbit(yaw,pitch);if(renderer)renderer->SetCamera(camera);}
 extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeCameraZoom(JNIEnv*,jclass,jfloat delta){camera.Zoom(delta);if(renderer)renderer->SetCamera(camera);}
 extern "C" JNIEXPORT jboolean JNICALL Java_com_rsm_mobile_MainActivity_nativeRunScript(JNIEnv* env,jclass,jstring src){const char* raw=env->GetStringUTFChars(src,nullptr);rsm::LuauService service([](std::string m){lastScriptLog=std::move(m);});service.Bind(runtimeGame?runtimeGame.get():&game);bool ok=service.CompileAndRun(raw?raw:"");env->ReleaseStringUTFChars(src,raw);return ok?JNI_TRUE:JNI_FALSE;}
-extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeSyncScene(JNIEnv* env,jclass,jfloatArray data,jobjectArray names,jobjectArray types){
+extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeSyncScene(JNIEnv* env,jclass,jfloatArray data,jobjectArray ids,jobjectArray names,jobjectArray types,jobjectArray parents){
  std::lock_guard<std::mutex> lock(engineMutex);
- if(!workspace)return; for(auto* c:workspace->GetChildren()) c->Destroy();
+ if(!workspace)return;
+ for(auto* c:workspace->GetChildren()) c->Destroy();
  editorIndex.clear();
- jsize n=env->GetArrayLength(data); if(n%13)return; jsize count=n/13;
- if(env->GetArrayLength(names)!=count||env->GetArrayLength(types)!=count)return;
+ jsize n=env->GetArrayLength(data); if(n%14)return; jsize count=n/14;
+ if(env->GetArrayLength(ids)!=count||env->GetArrayLength(names)!=count||env->GetArrayLength(types)!=count||env->GetArrayLength(parents)!=count)return;
  std::vector<jfloat> v(n);env->GetFloatArrayRegion(data,0,n,v.data());
- for(int k=0;k<count;++k){int i=k*13;auto nameObj=(jstring)env->GetObjectArrayElement(names,k);auto typeObj=(jstring)env->GetObjectArrayElement(types,k);const char* name=env->GetStringUTFChars(nameObj,nullptr);const char* type=env->GetStringUTFChars(typeObj,nullptr);std::string className=type?type:"Part";if(className!="Part"&&className!="Model"&&className!="Folder"&&className!="Script"&&className!="LocalScript"&&className!="ModuleScript")className="Part";auto p=rsm::InstanceFactory::New(className);if(name)p->SetName(name);if(auto*part=dynamic_cast<rsm::BasePart*>(p.get())){part->SetPosition({v[i],v[i+1],v[i+2]});part->SetSize({v[i+3],v[i+4],v[i+5]});auto cf=part->CFrameValue();auto qx=rsm::Quaternion::FromAxisAngle({1,0,0},v[i+6]),qy=rsm::Quaternion::FromAxisAngle({0,1,0},v[i+7]),qz=rsm::Quaternion::FromAxisAngle({0,0,1},v[i+8]);cf.rotation=(qz*qy*qx).Normalized();part->SetCFrame(cf);part->SetColor({v[i+9],v[i+10],v[i+11]});part->SetAnchored(v[i+12]>0.5f);}rsm::Instance::SetParent(std::move(p),workspace);if(name){editorIndex[name]=workspace->GetChildren().back();env->ReleaseStringUTFChars(nameObj,name);}if(type)env->ReleaseStringUTFChars(typeObj,type);env->DeleteLocalRef(nameObj);env->DeleteLocalRef(typeObj);}
+ std::unordered_map<std::string,rsm::Instance*> created;
+ std::vector<std::string> parentIds(count);
+ for(int k=0;k<count;++k){
+  auto idObj=(jstring)env->GetObjectArrayElement(ids,k), nameObj=(jstring)env->GetObjectArrayElement(names,k), typeObj=(jstring)env->GetObjectArrayElement(types,k), parentObj=(jstring)env->GetObjectArrayElement(parents,k);
+  const char* id=env->GetStringUTFChars(idObj,nullptr),*name=env->GetStringUTFChars(nameObj,nullptr),*type=env->GetStringUTFChars(typeObj,nullptr),*parent=env->GetStringUTFChars(parentObj,nullptr);
+  std::string className=type?type:"Part";
+  if(className!="Part"&&className!="Model"&&className!="Folder"&&className!="Script"&&className!="LocalScript"&&className!="ModuleScript")className="Part";
+  auto p=rsm::InstanceFactory::New(className);if(name)p->SetName(name);
+  if(auto*part=dynamic_cast<rsm::BasePart*>(p.get())){
+   int i=k*14;part->SetPosition({v[i],v[i+1],v[i+2]});part->SetSize({v[i+3],v[i+4],v[i+5]});
+   auto cf=part->CFrameValue();auto qx=rsm::Quaternion::FromAxisAngle({1,0,0},v[i+6]),qy=rsm::Quaternion::FromAxisAngle({0,1,0},v[i+7]),qz=rsm::Quaternion::FromAxisAngle({0,0,1},v[i+8]);cf.rotation=(qz*qy*qx).Normalized();part->SetCFrame(cf);
+   part->SetColor({v[i+9],v[i+10],v[i+11]});part->SetAnchored(v[i+12]>0.5f);part->SetCanCollide(v[i+13]>0.5f);
+  }
+  rsm::Instance* raw=p.get();rsm::Instance::SetParent(std::move(p),workspace);
+  std::string sid=id?id:"";created[sid]=raw;editorIndex[sid]=raw;parentIds[k]=parent?parent:"";
+  if(id)env->ReleaseStringUTFChars(idObj,id);if(name)env->ReleaseStringUTFChars(nameObj,name);if(type)env->ReleaseStringUTFChars(typeObj,type);if(parent)env->ReleaseStringUTFChars(parentObj,parent);
+  env->DeleteLocalRef(idObj);env->DeleteLocalRef(nameObj);env->DeleteLocalRef(typeObj);env->DeleteLocalRef(parentObj);
+ }
+ for(int k=0;k<count;++k){auto*child=created[std::to_string("")];(void)child;}
+ // Reparent after all instances exist, so arbitrary model hierarchy is preserved.
+ for(int k=0;k<count;++k){
+  jstring idObj=(jstring)env->GetObjectArrayElement(ids,k), parentObj=(jstring)env->GetObjectArrayElement(parents,k);
+  const char* id=env->GetStringUTFChars(idObj,nullptr),*parent=env->GetStringUTFChars(parentObj,nullptr);
+  auto ci=created.find(id?id:""), pi=created.find(parent?parent:"");
+  if(ci!=created.end()&&pi!=created.end()&&ci->second!=pi->second)ci->second->SetParent(pi->second);
+  if(id)env->ReleaseStringUTFChars(idObj,id);if(parent)env->ReleaseStringUTFChars(parentObj,parent);
+  env->DeleteLocalRef(idObj);env->DeleteLocalRef(parentObj);
+ }
 }
 
 extern "C" JNIEXPORT jint JNICALL Java_com_rsm_mobile_MainActivity_nativeRaycast(JNIEnv*,jclass,jfloat x,jfloat y,jfloat w,jfloat h){
