@@ -4,6 +4,7 @@ import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.opengl.Matrix
 import com.roblox.studiomobile.editor.SceneGraph
+import com.roblox.studiomobile.core.SelectionService
 import com.roblox.studiomobile.editor.ViewportCamera
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -13,11 +14,14 @@ import javax.microedition.khronos.opengles.GL10
 
 class ViewportRenderer(
     private val graph: SceneGraph,
-    private val camera: ViewportCamera
+    private val camera: ViewportCamera,
+    selection: SelectionService
 ) : GLSurfaceView.Renderer {
     private var program = 0
     private var positionHandle = 0
     private var mvpHandle = 0
+    private var colorHandle = 0
+    @Volatile private var selectedIds: Set<String> = emptySet()
     private var width = 1
     private var height = 1
 
@@ -32,10 +36,13 @@ class ViewportRenderer(
         .asFloatBuffer()
         .apply { put(CUBE); position(0) }
 
+    init { selection.changed.connect { selectedIds = it.map { instance -> instance.id }.toSet() } }
+
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         program = createProgram(VERTEX_SHADER, FRAGMENT_SHADER)
         positionHandle = GLES20.glGetAttribLocation(program, "aPosition")
         mvpHandle = GLES20.glGetUniformLocation(program, "uMvp")
+        colorHandle = GLES20.glGetUniformLocation(program, "uColor")
         GLES20.glClearColor(0.08f, 0.09f, 0.11f, 1f)
         GLES20.glEnable(GLES20.GL_DEPTH_TEST)
     }
@@ -67,7 +74,7 @@ class ViewportRenderer(
         val parts = graph.renderable()
         if (parts.isEmpty()) {
             Matrix.setIdentityM(model, 0)
-            drawModel(model)
+            drawModel(model, false)
         } else {
             parts.forEach { node ->
                 val p = node.transform.position
@@ -75,16 +82,17 @@ class ViewportRenderer(
                 Matrix.setIdentityM(model, 0)
                 Matrix.translateM(model, 0, p.x, p.y, p.z)
                 Matrix.scaleM(model, 0, s.x, s.y, s.z)
-                drawModel(model)
+                drawModel(model, node.instance.id in selectedIds)
             }
         }
 
         GLES20.glDisableVertexAttribArray(positionHandle)
     }
 
-    private fun drawModel(modelMatrix: FloatArray) {
+    private fun drawModel(modelMatrix: FloatArray, selected: Boolean) {
         Matrix.multiplyMM(mvp, 0, viewProjection, 0, modelMatrix, 0)
         GLES20.glUniformMatrix4fv(mvpHandle, 1, false, mvp, 0)
+        GLES20.glUniform4f(colorHandle, if (selected) 0.20f else 0.55f, if (selected) 0.75f else 0.62f, if (selected) 1.0f else 0.72f, 1f)
         cube.position(0)
         GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, CUBE.size / 3)
     }
@@ -126,6 +134,6 @@ class ViewportRenderer(
         private const val VERTEX_SHADER =
             "attribute vec3 aPosition; uniform mat4 uMvp; void main(){gl_Position=uMvp*vec4(aPosition,1.0);}"
         private const val FRAGMENT_SHADER =
-            "precision mediump float; void main(){gl_FragColor=vec4(0.55,0.62,0.72,1.0);}"
+            "precision mediump float; uniform vec4 uColor; void main(){gl_FragColor=uColor;}"
     }
 }
