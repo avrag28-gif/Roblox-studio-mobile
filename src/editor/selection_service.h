@@ -4,7 +4,6 @@
 #include "../core/base_part.h"
 #include "../physics/physics_world.h"
 #include "../renderer/camera.h"
-#include "../physics/raycast.h"
 namespace rsm {
 class SelectionService {
  Instance* selected_=nullptr;
