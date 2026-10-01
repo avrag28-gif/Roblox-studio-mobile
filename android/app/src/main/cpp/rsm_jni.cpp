@@ -2,6 +2,7 @@
 #include "core/data_model.h"
 #include "core/instance_factory.h"
 #include "core/change_history.h"
+#include "serialization/scene_codec.h"
 #include "renderer/gles_renderer.h"
 #include "renderer/camera.h"
 #include "physics/physics_world.h"
@@ -130,7 +131,7 @@ extern "C" JNIEXPORT jboolean JNICALL Java_com_rsm_mobile_MainActivity_nativeRun
 }
 extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeSyncScene(JNIEnv* env,jclass,jfloatArray data,jobjectArray ids,jobjectArray names,jobjectArray types,jobjectArray parents){
  std::lock_guard<std::mutex> lock(engineMutex);if(!workspace)return;
- for(auto* c:workspace->GetChildren())c->Destroy();editorIndex.clear();
+ for(auto* c:workspace->GetChildren())c->Destroy();editorIndex.clear();changeHistory.Clear();structuralSnapshots.clear();
  jsize n=env->GetArrayLength(data);if(n%14)return;jsize count=n/14;
  if(env->GetArrayLength(ids)!=count||env->GetArrayLength(names)!=count||env->GetArrayLength(types)!=count||env->GetArrayLength(parents)!=count)return;
  std::vector<jfloat>v(n);env->GetFloatArrayRegion(data,0,n,v.data());std::unordered_map<std::string,rsm::Instance*>created;std::vector<std::string>parentIds(count);
@@ -208,6 +209,18 @@ extern "C" JNIEXPORT jboolean JNICALL Java_com_rsm_mobile_MainActivity_nativeSet
  return ok?JNI_TRUE:JNI_FALSE;
 }
 
+extern "C" JNIEXPORT jstring JNICALL Java_com_rsm_mobile_MainActivity_nativeSaveScene(JNIEnv* env,jclass){
+ std::lock_guard<std::mutex> lock(engineMutex);
+ return env->NewStringUTF(rsm::SceneCodec::Save(game).c_str());
+}
+extern "C" JNIEXPORT jboolean JNICALL Java_com_rsm_mobile_MainActivity_nativeLoadScene(JNIEnv* env,jclass,jstring scene){
+ std::lock_guard<std::mutex> lock(engineMutex);if(!scene||!workspace)return JNI_FALSE;
+ const char*raw=env->GetStringUTFChars(scene,nullptr);std::string text=raw?raw:"";if(raw)env->ReleaseStringUTFChars(scene,raw);
+ std::string error;auto loaded=rsm::SceneCodec::Load(text,error);if(!loaded)return JNI_FALSE;
+ game.ReplaceContentsFrom(*loaded);workspace=game.GetService("Workspace");editorIndex.clear();changeHistory.Clear();structuralSnapshots.clear();
+ std::size_t index=1;for(auto*x:workspace->GetDescendants())editorIndex["load"+std::to_string(index++)]=x;
+ return JNI_TRUE;
+}
 extern "C" JNIEXPORT jstring JNICALL Java_com_rsm_mobile_MainActivity_nativeGetSceneSnapshot(JNIEnv* env,jclass){
  std::lock_guard<std::mutex> lock(engineMutex);std::string out="[";bool first=true;std::unordered_map<const rsm::Instance*,std::string>ids;for(const auto&e:editorIndex)ids[e.second]=e.first;
  for(auto*x:workspace?workspace->GetDescendants():std::vector<rsm::Instance*>{}){if(!first)out+=",";first=false;auto esc=[](const std::string&s){std::string r;for(char c:s){if(c=='\\'||c=='"')r+='\\';r+=c;}return r;};std::string id=ids.count(x)?ids[x]:std::to_string(reinterpret_cast<std::uintptr_t>(x));std::string parent="";if(x->Parent()&&ids.count(x->Parent()))parent=ids[x->Parent()];out+="{\"id\":\""+esc(id)+"\",\"name\":\""+esc(x->Name())+"\",\"type\":\""+esc(x->ClassName())+"\",\"parent\":\""+esc(parent)+"\"";if(auto*part=dynamic_cast<rsm::BasePart*>(x)){auto p=part->Position(),s=part->Size(),c=part->Color(),q=part->CFrameValue().rotation;out+=",\"position\":["+std::to_string(p.x)+","+std::to_string(p.y)+","+std::to_string(p.z)+"]";out+=",\"size\":["+std::to_string(s.x)+","+std::to_string(s.y)+","+std::to_string(s.z)+"]";out+=",\"rotation\":["+std::to_string(q.x)+","+std::to_string(q.y)+","+std::to_string(q.z)+","+std::to_string(q.w)+"]";out+=",\"color\":["+std::to_string(c.r)+","+std::to_string(c.g)+","+std::to_string(c.b)+"]";out+=",\"anchored\":"+(part->Anchored()?"true":"false")+",\"canCollide\":"+(part->CanCollide()?"true":"false");}out+="}";}out+="]";return env->NewStringUTF(out.c_str());
