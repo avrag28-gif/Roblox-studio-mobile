@@ -28,6 +28,7 @@ class ViewportRenderer(
     private var lineColorHandle = 0
     private var lineMvpHandle = 0
     @Volatile private var selectedIds: Set<String> = emptySet()
+    @Volatile var transformTool: com.roblox.studiomobile.editor.TransformTool = com.roblox.studiomobile.editor.TransformTool.Select
     private var width = 1
     private var height = 1
 
@@ -122,8 +123,40 @@ class ViewportRenderer(
         drawGizmoAxis(0, 1f, 0.2f, 0.2f)
         drawGizmoAxis(1, 0.2f, 1f, 0.2f)
         drawGizmoAxis(2, 0.2f, 0.5f, 1f)
+        if (transformTool == com.roblox.studiomobile.editor.TransformTool.Rotate) {
+            drawRotateRings(length)
+        }
         GLES20.glDisableVertexAttribArray(linePositionHandle)
         GLES20.glUseProgram(program)
+    }
+
+    private fun drawRotateRings(length: Float) {
+        val radius = 1.05f
+        drawRing(radius, 0, 1f, 0.2f, 0.2f)
+        drawRing(radius, 1, 0.2f, 1f, 0.2f)
+        drawRing(radius, 2, 0.2f, 0.5f, 1f)
+    }
+
+    private fun drawRing(radius: Float, axis: Int, r: Float, g: Float, b: Float) {
+        val segments = 64
+        val values = FloatArray((segments + 1) * 3)
+        for (i in 0..segments) {
+            val a = (i.toFloat() / segments) * (Math.PI * 2.0).toFloat()
+            val c = kotlin.math.cos(a) * radius
+            val s = kotlin.math.sin(a) * radius
+            val base = i * 3
+            when (axis) {
+                0 -> { values[base] = 0f; values[base + 1] = c; values[base + 2] = s }
+                1 -> { values[base] = c; values[base + 1] = 0f; values[base + 2] = s }
+                else -> { values[base] = c; values[base + 1] = s; values[base + 2] = 0f }
+            }
+        }
+        val buffer = ByteBuffer.allocateDirect(values.size * 4).order(ByteOrder.nativeOrder()).asFloatBuffer()
+        buffer.put(values).position(0)
+        GLES20.glUniform4f(lineColorHandle, r, g, b, 1f)
+        GLES20.glLineWidth(4f)
+        GLES20.glVertexAttribPointer(linePositionHandle, 3, GLES20.GL_FLOAT, false, 12, buffer)
+        GLES20.glDrawArrays(GLES20.GL_LINE_STRIP, 0, segments + 1)
     }
 
     private fun drawGizmoAxis(axis: Int, r: Float, g: Float, b: Float) {
