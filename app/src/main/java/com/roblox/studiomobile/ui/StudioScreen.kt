@@ -22,6 +22,7 @@ class StudioScreen(private val context:Context,private val runtime:CoreRuntime){
   toolbar.addView(Button(context).apply{text="Redo";setOnClickListener{runtime.transactions.redo();refresh()}},LinearLayout.LayoutParams(0,52,1f))
   toolbar.addView(Button(context).apply{text="Move";setOnClickListener{transform.tool=TransformTool.Move}},LinearLayout.LayoutParams(0,52,1f))
   toolbar.addView(Button(context).apply{text="Scale";setOnClickListener{transform.tool=TransformTool.Scale}},LinearLayout.LayoutParams(0,52,1f))
+  toolbar.addView(Button(context).apply{text="Rotate";setOnClickListener{transform.tool=TransformTool.Rotate}} ,LinearLayout.LayoutParams(0,52,1f))
   toolbar.addView(Button(context).apply{text="Select";setOnClickListener{transform.tool=TransformTool.Select}},LinearLayout.LayoutParams(0,52,1f))
   toolbar.addView(Button(context).apply{text="Delete";setOnClickListener{selected?.let{controller.delete(it);selected=null;refresh()}}},LinearLayout.LayoutParams(0,52,1f))
   root.addView(toolbar,LinearLayout.LayoutParams(-1,60))
@@ -35,7 +36,7 @@ class StudioScreen(private val context:Context,private val runtime:CoreRuntime){
  private fun viewport():FrameLayout{
   val frame=FrameLayout(context)
   val camera=ViewportCamera()
-  val surface=ViewportSurface(context,scene.graph,camera,runtime.selection)
+  val surface=ViewportSurface(context,scene.graph,camera,runtime.selection,runtime.properties)
   surface.onPicked={select(it)}
   surface.onTransformGestureStart={transform.beginGesture()}
   surface.onTransformGestureEnd={commit->transform.endGesture(commit)}
