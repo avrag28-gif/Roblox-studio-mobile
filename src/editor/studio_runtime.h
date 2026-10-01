@@ -176,6 +176,8 @@ public:
  }
  bool Undo(){
   const bool ok=history_.UndoAny([this](const std::string&id,const std::string&p,double v){return ApplyTransformValue(id,p,v);},{},[this](const ChangeHistory::Command&c){
+   if(c.property=="__TRANSFORM__")return ApplyTransformSnapshot(c,true);
+   if(c.property=="__TRANSFORM__")return ApplyTransformSnapshot(c,false);
    if(c.property!="__STRUCTURE__")return false;
    std::stringstream ss(c.payload);std::string oldParent,newParent,id;
    if(!std::getline(ss,oldParent,'|')||!std::getline(ss,newParent,'|')||!std::getline(ss,id,'|'))return false;
