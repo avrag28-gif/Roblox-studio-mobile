@@ -17,7 +17,29 @@ public class MainActivity extends Activity {
   static { try { System.loadLibrary("rsm_android"); } catch (Throwable ignored) {} }
 
   enum Mode { SELECT, MOVE, ROTATE, SCALE }
-  static class Obj {
+  static class NativeObj {
+  String id,name,type,parent; float x,y,z,sx,sy,sz; float rx,ry,rz; int color=Color.rgb(90,160,240); boolean anchored=true,collide=true;
+}
+ArrayList<NativeObj> nativeScene=new ArrayList<>();
+
+void refreshNativeScene(){
+  String json=nativeGetSceneSnapshot(); if(json==null||json.length()<2)return;
+  try{
+    org.json.JSONArray a=new org.json.JSONArray(json); nativeScene.clear();
+    for(int i=0;i<a.length();i++){
+      org.json.JSONObject j=a.getJSONObject(i); NativeObj n=new NativeObj();
+      n.id=j.optString("id"); n.name=j.optString("name"); n.type=j.optString("type"); n.parent=j.optString("parent","Workspace");
+      org.json.JSONArray p=j.optJSONArray("position"),s=j.optJSONArray("size"),r=j.optJSONArray("rotation"),col=j.optJSONArray("color");
+      if(p!=null&&p.length()>=3){n.x=(float)p.optDouble(0);n.y=(float)p.optDouble(1);n.z=(float)p.optDouble(2);}
+      if(s!=null&&s.length()>=3){n.sx=(float)s.optDouble(0);n.sy=(float)s.optDouble(1);n.sz=(float)s.optDouble(2);}
+      if(r!=null&&r.length()>=4){n.rx=(float)r.optDouble(0);n.ry=(float)r.optDouble(1);n.rz=(float)r.optDouble(2);}
+      if(col!=null&&col.length()>=3)n.color=Color.rgb((int)(255*col.optDouble(0)),(int)(255*col.optDouble(1)),(int)(255*col.optDouble(2)));
+      n.anchored=j.optBoolean("anchored",true);n.collide=j.optBoolean("canCollide",true);nativeScene.add(n);
+    }
+  }catch(Exception e){append("ERROR","Native snapshot parse: "+e.getMessage());}
+}
+
+static class Obj {
     String id,name,type="Part",parent="Workspace";
     float x,y,z,sx=2,sy=2,sz=2,rx,ry,rz;
     int color=Color.rgb(90,160,240);
