@@ -88,7 +88,7 @@ public:
    if(attrIndex>=f.size()){error="missing attribute count";return nullptr;}
    std::size_t count=0;try{count=std::stoul(f[attrIndex]);}catch(...){error="invalid attribute count";return nullptr;}++attrIndex;
    for(std::size_t n=0;n<count;++n){
-    if(attrIndex+3>=f.size()){error="truncated attribute";return nullptr;}
+    if(attrIndex+2>=f.size()){error="truncated attribute";return nullptr;}
     std::string key=Unhex(f[attrIndex++]),type=f[attrIndex++],value=f[attrIndex++];
     if(type=="b")obj->SetAttribute(key,value=="1");else if(type=="d")try{obj->SetAttribute(key,std::stod(value));}catch(...){error="invalid attribute number";return nullptr;}else if(type=="s")obj->SetAttribute(key,Unhex(value));else if(type!="n"){error="invalid attribute type";return nullptr;}
    }
