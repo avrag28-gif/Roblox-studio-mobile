@@ -16,7 +16,7 @@ class ViewportSurface(
     private var lastSpan = 0f
     private var gesture = 0
     var onPicked: ((com.roblox.studiomobile.core.Instance) -> Unit)? = null
-    var onDrag: ((Float, Float) -> Unit)? = null
+    var onTransformDrag: ((Float, Float) -> Boolean)? = null
     private var downX = 0f
     private var downY = 0f
 
@@ -53,8 +53,8 @@ class ViewportSurface(
                 } else if (gesture == 1) {
                     val dx = event.x - lastX
                     val dy = event.y - lastY
-                    onDrag?.invoke(dx,dy)
-                    if (onDrag == null) camera.orbit(-dx * 0.008f, -dy * 0.008f)
+                    val transformed = onTransformDrag?.invoke(dx, dy) == true
+                    if (!transformed) camera.orbit(-dx * 0.008f, -dy * 0.008f)
                     lastX = event.x
                     lastY = event.y
                 }
@@ -62,13 +62,17 @@ class ViewportSurface(
             }
             MotionEvent.ACTION_POINTER_UP -> {
                 gesture = if (event.pointerCount > 2) 2 else 1
+                if (gesture == 1) {
+                    lastX = event.x
+                    lastY = event.y
+                }
                 return true
             }
             MotionEvent.ACTION_UP -> {
-                if (gesture == 1 && kotlin.math.abs(event.x-downX) < 12f && kotlin.math.abs(event.y-downY) < 12f) {
-                    val ray = camera.ray(event.x,event.y,width,height)
+                if (gesture == 1 && kotlin.math.abs(event.x - downX) < 12f && kotlin.math.abs(event.y - downY) < 12f) {
+                    val ray = camera.ray(event.x, event.y, width, height)
                     val hit = com.roblox.studiomobile.editor.ViewportPicker(graph).pick(ray)
-                    if(hit != null) onPicked?.invoke(hit)
+                    if (hit != null) onPicked?.invoke(hit)
                 }
                 gesture = 0
                 return true
