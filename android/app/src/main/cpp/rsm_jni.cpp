@@ -163,6 +163,15 @@ extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeSyncSce
  for(int k=0;k<count;++k){jstring idObj=(jstring)env->GetObjectArrayElement(ids,k),parentObj=(jstring)env->GetObjectArrayElement(parents,k);const char*id=env->GetStringUTFChars(idObj,nullptr),*parent=env->GetStringUTFChars(parentObj,nullptr);auto ci=created.find(id?id:""),pi=created.find(parent?parent:"");if(ci!=created.end()&&pi!=created.end()&&ci->second!=pi->second)ci->second->SetParent(pi->second);if(id)env->ReleaseStringUTFChars(idObj,id);if(parent)env->ReleaseStringUTFChars(parentObj,parent);env->DeleteLocalRef(idObj);env->DeleteLocalRef(parentObj);}
 }
 
+extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeBeginHistoryTransaction(JNIEnv*,jclass){
+ std::lock_guard<std::mutex> lock(engineMutex);
+ changeHistory.BeginTransaction();
+}
+extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeEndHistoryTransaction(JNIEnv*,jclass){
+ std::lock_guard<std::mutex> lock(engineMutex);
+ changeHistory.EndTransaction();
+}
+
 extern "C" JNIEXPORT jboolean JNICALL Java_com_rsm_mobile_MainActivity_nativeCreateInstance(JNIEnv* env,jclass,jstring id,jstring name,jstring type,jstring parentId){
  std::lock_guard<std::mutex> lock(engineMutex);if(!workspace)return JNI_FALSE;
  const char*sid=env->GetStringUTFChars(id,nullptr),*sn=env->GetStringUTFChars(name,nullptr),*st=env->GetStringUTFChars(type,nullptr),*sp=env->GetStringUTFChars(parentId,nullptr);
@@ -285,16 +294,20 @@ extern "C" JNIEXPORT jboolean JNICALL Java_com_rsm_mobile_MainActivity_nativeSet
 extern "C" JNIEXPORT jboolean JNICALL Java_com_rsm_mobile_MainActivity_nativeUndo(JNIEnv*,jclass){
  std::lock_guard<std::mutex> lock(engineMutex);applyingHistory=true;bool ok=false;
  if(changeHistory.CanUndo()){
-  ok=changeHistory.UndoLastStructural([&](const rsm::ChangeHistory::Command&c){return RestoreStructural(c,true);});
-  if(!ok)ok=changeHistory.Undo([&](const std::string&id,const std::string&p,double v){return ApplyNativeProperty(id,p,v);});
+  ok=changeHistory.UndoAny(
+   [&](const std::string&id,const std::string&p,double v){return ApplyNativeProperty(id,p,v);},
+   [&](const rsm::ChangeHistory::Command&c){return RestoreStructural(c,true);}
+  );
  }
  applyingHistory=false;return ok?JNI_TRUE:JNI_FALSE;
 }
 extern "C" JNIEXPORT jboolean JNICALL Java_com_rsm_mobile_MainActivity_nativeRedo(JNIEnv*,jclass){
  std::lock_guard<std::mutex> lock(engineMutex);applyingHistory=true;bool ok=false;
  if(changeHistory.CanRedo()){
-  ok=changeHistory.RedoStructural([&](const rsm::ChangeHistory::Command&c){return RestoreStructural(c,false);});
-  if(!ok)ok=changeHistory.Redo([&](const std::string&id,const std::string&p,double v){return ApplyNativeProperty(id,p,v);});
+  ok=changeHistory.RedoAny(
+   [&](const std::string&id,const std::string&p,double v){return ApplyNativeProperty(id,p,v);},
+   [&](const rsm::ChangeHistory::Command&c){return RestoreStructural(c,false);}
+  );
  }
  applyingHistory=false;return ok?JNI_TRUE:JNI_FALSE;
 }
