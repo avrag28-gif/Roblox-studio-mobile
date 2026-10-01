@@ -9,6 +9,8 @@
 #include <memory>
 #include <mutex>
 #include <unordered_map>
+#include <vector>
+#include <cstdint>
 #include "platform/android_lifecycle.h"
 static rsm::AndroidLifecycle lifecycle;
 static rsm::DataModel game;
@@ -66,7 +68,6 @@ extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeSyncSce
   if(id)env->ReleaseStringUTFChars(idObj,id);if(name)env->ReleaseStringUTFChars(nameObj,name);if(type)env->ReleaseStringUTFChars(typeObj,type);if(parent)env->ReleaseStringUTFChars(parentObj,parent);
   env->DeleteLocalRef(idObj);env->DeleteLocalRef(nameObj);env->DeleteLocalRef(typeObj);env->DeleteLocalRef(parentObj);
  }
- for(int k=0;k<count;++k){auto*child=created[std::to_string("")];(void)child;}
  // Reparent after all instances exist, so arbitrary model hierarchy is preserved.
  for(int k=0;k<count;++k){
   jstring idObj=(jstring)env->GetObjectArrayElement(ids,k), parentObj=(jstring)env->GetObjectArrayElement(parents,k);
@@ -120,12 +121,19 @@ extern "C" JNIEXPORT jstring JNICALL Java_com_rsm_mobile_MainActivity_nativeGetS
  return env->NewStringUTF(out.c_str());
 }
 
-extern "C" JNIEXPORT jint JNICALL Java_com_rsm_mobile_MainActivity_nativeRaycast(JNIEnv*,jclass,jfloat x,jfloat y,jfloat w,jfloat h){
- if(!workspace||w<=0||h<=0)return -1;
- auto hit=rsm::PhysicsWorld().Raycast(game,camera.ScreenRay(x,y,w,h)); if(!hit.part)return -1;
- int index=0; for(auto*child:workspace->GetChildren()){if(child==hit.part)return index; ++index;} return -1;
+extern "C" JNIEXPORT jstring JNICALL Java_com_rsm_mobile_MainActivity_nativeRaycastId(JNIEnv* env,jclass,jfloat x,jfloat y,jfloat w,jfloat h){
+ std::lock_guard<std::mutex> lock(engineMutex);
+ if(!workspace||w<=0||h<=0)return nullptr;
+ auto hit=rsm::PhysicsWorld().Raycast(game,camera.ScreenRay(x,y,w,h)); if(!hit.part)return nullptr;
+ for(const auto& e:editorIndex)if(e.second==hit.part)return env->NewStringUTF(e.first.c_str());
+ return nullptr;
 }
-
+extern "C" JNIEXPORT jint JNICALL Java_com_rsm_mobile_MainActivity_nativeRaycast(JNIEnv* env,jclass,jfloat x,jfloat y,jfloat w,jfloat h){
+ jstring id=Java_com_rsm_mobile_MainActivity_nativeRaycastId(env,nullptr,x,y,w,h); if(!id)return -1;
+ const char* s=env->GetStringUTFChars(id,nullptr);int result=0;
+ auto it=editorIndex.find(s?s:"");if(it!=editorIndex.end()){int i=0;for(auto* child:workspace->GetChildren()){if(child==it->second){result=i;break;}++i;}}
+ if(s)env->ReleaseStringUTFChars(id,s);env->DeleteLocalRef(id);return result;
+}
 extern "C" JNIEXPORT jboolean JNICALL Java_com_rsm_mobile_MainActivity_nativeSetProperty(JNIEnv* env,jclass,jstring name,jstring property,jdouble value){std::lock_guard<std::mutex> lock(engineMutex);const char*n=env->GetStringUTFChars(name,nullptr);const char*p=env->GetStringUTFChars(property,nullptr);auto it=editorIndex.find(n?n:"");bool ok=false;if(it!=editorIndex.end()){if(auto*part=dynamic_cast<rsm::BasePart*>(it->second)){if(std::string(p)=="PositionX"){auto v=part->Position();v.x=value;part->SetPosition(v);ok=true;}else if(std::string(p)=="PositionY"){auto v=part->Position();v.y=value;part->SetPosition(v);ok=true;}else if(std::string(p)=="PositionZ"){auto v=part->Position();v.z=value;part->SetPosition(v);ok=true;}else if(std::string(p)=="SizeX"){auto v=part->Size();v.x=value;part->SetSize(v);ok=true;}else if(std::string(p)=="SizeY"){auto v=part->Size();v.y=value;part->SetSize(v);ok=true;}else if(std::string(p)=="SizeZ"){auto v=part->Size();v.z=value;part->SetSize(v);ok=true;}else if(std::string(p)=="Anchored"){part->SetAnchored(value!=0);ok=true;}else if(std::string(p)=="CanCollide"){part->SetCanCollide(value!=0);ok=true;}}}if(n)env->ReleaseStringUTFChars(name,n);if(p)env->ReleaseStringUTFChars(property,p);return ok?JNI_TRUE:JNI_FALSE;}
 
 extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeSetPlaying(JNIEnv*,jclass,jboolean playing){
