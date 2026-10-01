@@ -6,6 +6,7 @@ class DataModel final:public Instance{
 public:
  DataModel();
  void InitializeDefaultServices();
+ void ReplaceContentsFrom(const DataModel&source);
  Instance*GetService(const std::string&);
  const Instance*GetService(const std::string&)const;
  std::unique_ptr<Instance>Clone()const override;
