@@ -157,9 +157,12 @@ static class Obj {
   static native boolean nativeDeleteInstance(String id);
   static native String nativeDuplicateInstance(String id);
   static native boolean nativeSetParent(String id,String parentId);
+  static native boolean nativeSetName(String id,String name);
   static native boolean nativeSetProperty(String id,String property,double value);
   static native boolean nativeUndo();
   static native boolean nativeRedo();
+  static native String nativeSaveScene();
+  static native boolean nativeLoadScene(String scene);
   void refreshExplorer(){
     explorer.removeAllViews();
     TextView h=text("EXPLORER",13);h.setTypeface(Typeface.DEFAULT,Typeface.BOLD);explorer.addView(h,new LinearLayout.LayoutParams(-1,dp(46)));
