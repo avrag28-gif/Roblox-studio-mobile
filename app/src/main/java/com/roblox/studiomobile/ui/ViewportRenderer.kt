@@ -21,6 +21,10 @@ class ViewportRenderer(
     private var positionHandle = 0
     private var mvpHandle = 0
     private var colorHandle = 0
+    private var lineProgram = 0
+    private var linePositionHandle = 0
+    private var lineColorHandle = 0
+    private var lineMvpHandle = 0
     @Volatile private var selectedIds: Set<String> = emptySet()
     private var width = 1
     private var height = 1
@@ -31,6 +35,8 @@ class ViewportRenderer(
     private val viewProjection = FloatArray(16)
     private val mvp = FloatArray(16)
 
+    private val gizmoLines: FloatBuffer = ByteBuffer.allocateDirect(GIZMO_LINES.size * 4).order(ByteOrder.nativeOrder()).asFloatBuffer().apply { put(GIZMO_LINES); position(0) }
+
     private val cube: FloatBuffer = ByteBuffer.allocateDirect(CUBE.size * 4)
         .order(ByteOrder.nativeOrder())
         .asFloatBuffer()
@@ -40,9 +46,13 @@ class ViewportRenderer(
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         program = createProgram(VERTEX_SHADER, FRAGMENT_SHADER)
+        lineProgram = createProgram(LINE_VERTEX_SHADER, LINE_FRAGMENT_SHADER)
         positionHandle = GLES20.glGetAttribLocation(program, "aPosition")
         mvpHandle = GLES20.glGetUniformLocation(program, "uMvp")
         colorHandle = GLES20.glGetUniformLocation(program, "uColor")
+        linePositionHandle = GLES20.glGetAttribLocation(lineProgram, "aPosition")
+        lineMvpHandle = GLES20.glGetUniformLocation(lineProgram, "uMvp")
+        lineColorHandle = GLES20.glGetUniformLocation(lineProgram, "uColor")
         GLES20.glClearColor(0.08f, 0.09f, 0.11f, 1f)
         GLES20.glEnable(GLES20.GL_DEPTH_TEST)
     }
@@ -89,6 +99,35 @@ class ViewportRenderer(
         GLES20.glDisableVertexAttribArray(positionHandle)
     }
 
+    private fun drawGizmo(parts: List<com.roblox.studiomobile.editor.SceneNode>) {
+        val selected = parts.firstOrNull { it.instance.id in selectedIds } ?: return
+        val p = selected.transform.position
+        val length = (selected.transform.scale.x + selected.transform.scale.y + selected.transform.scale.z).coerceAtLeast(1f) * 1.4f
+        Matrix.setIdentityM(model, 0)
+        Matrix.translateM(model, 0, p.x, p.y, p.z)
+        Matrix.scaleM(model, 0, length, length, length)
+        Matrix.multiplyMM(mvp, 0, viewProjection, 0, model, 0)
+        GLES20.glUseProgram(lineProgram)
+        GLES20.glEnableVertexAttribArray(linePositionHandle)
+        GLES20.glVertexAttribPointer(linePositionHandle, 3, GLES20.GL_FLOAT, false, 12, gizmoLines)
+        GLES20.glUniformMatrix4fv(lineMvpHandle, 1, false, mvp, 0)
+        GLES20.glLineWidth(5f)
+        drawGizmoAxis(0, 1f, 0.2f, 0.2f)
+        drawGizmoAxis(1, 0.2f, 1f, 0.2f)
+        drawGizmoAxis(2, 0.2f, 0.5f, 1f)
+        GLES20.glDisableVertexAttribArray(linePositionHandle)
+        GLES20.glUseProgram(program)
+    }
+
+    private fun drawGizmoAxis(axis: Int, r: Float, g: Float, b: Float) {
+        GLES20.glUniform4f(lineColorHandle, r, g, b, 1f)
+        cube.position(0)
+        val offset = axis * 2
+        gizmoLines.position(offset * 3)
+        GLES20.glDrawArrays(GLES20.GL_LINES, 0, 2)
+        gizmoLines.position(0)
+    }
+
     private fun drawModel(modelMatrix: FloatArray, selected: Boolean) {
         Matrix.multiplyMM(mvp, 0, viewProjection, 0, modelMatrix, 0)
         GLES20.glUniformMatrix4fv(mvpHandle, 1, false, mvp, 0)
@@ -123,7 +162,7 @@ class ViewportRenderer(
     }
 
     companion object {
-        private val CUBE = floatArrayOf(
+        private val GIZMO_LINES = floatArrayOf(0f,0f,0f, 1f,0f,0f, 0f,0f,0f, 0f,1f,0f, 0f,0f,0f, 0f,0f,1f)\n        private val CUBE = floatArrayOf(
             -1f,-1f,1f, 1f,-1f,1f, 1f,1f,1f, -1f,-1f,1f, 1f,1f,1f, -1f,1f,1f,
             -1f,-1f,-1f, -1f,1f,-1f, 1f,1f,-1f, -1f,-1f,-1f, 1f,1f,-1f, 1f,-1f,-1f,
             -1f,1f,-1f, -1f,1f,1f, 1f,1f,1f, -1f,1f,-1f, 1f,1f,1f, 1f,1f,-1f,
@@ -131,6 +170,8 @@ class ViewportRenderer(
             1f,-1f,-1f, 1f,1f,-1f, 1f,1f,1f, 1f,-1f,-1f, 1f,1f,1f, 1f,-1f,1f,
             -1f,-1f,-1f, -1f,-1f,1f, -1f,1f,1f, -1f,-1f,-1f, -1f,1f,1f, -1f,1f,-1f
         )
+        private const val LINE_VERTEX_SHADER = "attribute vec3 aPosition; uniform mat4 uMvp; void main(){gl_Position=uMvp*vec4(aPosition,1.0);}"
+        private const val LINE_FRAGMENT_SHADER = "precision mediump float; uniform vec4 uColor; void main(){gl_FragColor=uColor;}"
         private const val VERTEX_SHADER =
             "attribute vec3 aPosition; uniform mat4 uMvp; void main(){gl_Position=uMvp*vec4(aPosition,1.0);}"
         private const val FRAGMENT_SHADER =
