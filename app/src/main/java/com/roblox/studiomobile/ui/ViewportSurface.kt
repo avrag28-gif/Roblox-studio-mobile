@@ -18,6 +18,7 @@ class ViewportSurface(
     private var lastSpan = 0f
     private var gesture = 0
     private var lockedAxis = com.roblox.studiomobile.editor.GizmoAxis.None
+    private var lastAxisValue = 0f
     var onPicked: ((com.roblox.studiomobile.core.Instance) -> Unit)? = null
     var onTransformDrag: ((Float, Float) -> Boolean)? = null
     var onGizmoAxisPick: ((com.roblox.studiomobile.editor.GizmoAxis) -> Unit)? = null
