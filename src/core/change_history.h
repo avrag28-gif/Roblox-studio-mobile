@@ -10,10 +10,12 @@ namespace rsm {
 class ChangeHistory {
 public:
  using ApplyFn=std::function<bool(const std::string&,const std::string&,double)>;
+ using ApplyStringFn=std::function<bool(const std::string&,const std::string&,const std::string&)>;
  struct Command {
   std::string id,property;
   double before=0,after=0;
   std::string payload;
+  std::string beforeString,afterString;
   std::vector<Command> children;
   bool compound=false;
  };
@@ -64,10 +66,10 @@ public:
   return true;
  }
 
- bool UndoAny(const ApplyFn&apply,const std::function<bool(const Command&)>&structuralApply){
+ bool UndoAny(const ApplyFn&apply,const ApplyStringFn&applyString,const std::function<bool(const Command&)>&structuralApply){
   if(!CanUndo())return false;
   const auto&c=commands_[cursor_-1];
-  if(!UndoCommand(c,apply,structuralApply))return false;
+  if(!UndoCommand(c,apply,applyString,structuralApply))return false;
   --cursor_;
   return true;
  }
@@ -98,36 +100,38 @@ public:
   return true;
  }
 
- bool RedoAny(const ApplyFn&apply,const std::function<bool(const Command&)>&structuralApply){
+ bool RedoAny(const ApplyFn&apply,const ApplyStringFn&applyString,const std::function<bool(const Command&)>&structuralApply){
   if(!CanRedo())return false;
   const auto&c=commands_[cursor_];
-  if(!RedoCommand(c,apply,structuralApply))return false;
+  if(!RedoCommand(c,apply,applyString,structuralApply))return false;
   ++cursor_;
   return true;
  }
 
 private:
- static bool UndoCommand(const Command&c,const ApplyFn&apply,const std::function<bool(const Command&)>&structuralApply){
+ static bool UndoCommand(const Command&c,const ApplyFn&apply,const ApplyStringFn&applyString,const std::function<bool(const Command&)>&structuralApply){
   if(c.compound){
    for(auto it=c.children.rbegin();it!=c.children.rend();++it)
-    if(!UndoCommand(*it,apply,structuralApply))return false;
+    if(!UndoCommand(*it,apply,applyString,structuralApply))return false;
    return true;
   }
   if(c.property=="__STRUCTURE__"){
    return structuralApply?structuralApply(c):false;
   }
+  if(c.property=="__NAME__")return applyString?applyString(c.id,c.property,c.beforeString):false;
   return apply?apply(c.id,c.property,c.before):false;
  }
 
  static bool RedoCommand(const Command&c,const ApplyFn&apply,const std::function<bool(const Command&)>&structuralApply){
   if(c.compound){
    for(const auto&child:c.children)
-    if(!RedoCommand(child,apply,structuralApply))return false;
+    if(!RedoCommand(child,apply,applyString,structuralApply))return false;
    return true;
   }
   if(c.property=="__STRUCTURE__"){
    return structuralApply?structuralApply(c):false;
   }
+  if(c.property=="__NAME__")return applyString?applyString(c.id,c.property,c.afterString):false;
   return apply?apply(c.id,c.property,c.after):false;
  }
 
