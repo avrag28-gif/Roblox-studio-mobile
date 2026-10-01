@@ -45,6 +45,6 @@ public:
  void End(){target_=nullptr;}
  const CFrame&Start()const{return start_;}
 private:
- Instance*target_=nullptr;TransformMode mode_=TransformMode::Move;GizmoAxis axis_=GizmoAxis::XYZ;TransformSpace space_=TransformSpace::World;CFrame start_{};TransformSnapSettings snap_{};
+ Instance*target_=nullptr;TransformMode mode_=TransformMode::Move;GizmoAxis axis_=GizmoAxis::XYZ;TransformSpace space_=TransformSpace::World;CFrame start_{};
 };
 }
