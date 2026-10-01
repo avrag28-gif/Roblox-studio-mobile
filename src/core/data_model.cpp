@@ -17,7 +17,7 @@ void DataModel::InitializeDefaultServices(){
   services_[raw->Name()]=raw;
   Instance::SetParent(std::move(service),this);
  };
- add(std::make_unique<Workspace>());
+ add(std::make_unique<rsm::Workspace>());
  add(std::make_unique<Players>());
  add(std::make_unique<Lighting>());
  add(std::make_unique<ReplicatedFirst>());
