@@ -1,0 +1,2 @@
+package com.roblox.studiomobile.core
+class SelectionService{private val selected=linkedSetOf<Instance>();val changed=Signal<List<Instance>>();fun set(x:Collection<Instance>){selected.clear();selected.addAll(x);changed.fire(selected.toList())};fun add(i:Instance){if(selected.add(i))changed.fire(selected.toList())};fun remove(i:Instance){if(selected.remove(i))changed.fire(selected.toList())};fun clear(){if(selected.isNotEmpty()){selected.clear();changed.fire(emptyList())}};fun get():List<Instance>=selected.toList()}
