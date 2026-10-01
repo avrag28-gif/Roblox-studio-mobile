@@ -1,2 +1,12 @@
 package com.roblox.studiomobile.core
-interface Command{fun execute();fun undo()};class TransactionManager{private val u=ArrayDeque<Command>();private val r=ArrayDeque<Command>();fun execute(c:Command){c.execute();u.addLast(c);r.clear()};fun undo(){if(u.isNotEmpty()){val c=u.removeLast();c.undo();r.addLast(c)}};fun redo(){if(r.isNotEmpty()){val c=r.removeLast();c.execute();u.addLast(c)}}}
+interface Command{fun execute();fun undo()}
+class TransactionManager{
+ private val undoStack=ArrayDeque<Command>()
+ private val redoStack=ArrayDeque<Command>()
+ val changed=Signal<Unit>()
+ fun execute(c:Command){c.execute();undoStack.addLast(c);redoStack.clear();changed.fire(Unit)}
+ fun undo(){if(undoStack.isNotEmpty()){val c=undoStack.removeLast();c.undo();redoStack.addLast(c);changed.fire(Unit)}}
+ fun redo(){if(redoStack.isNotEmpty()){val c=redoStack.removeLast();c.execute();undoStack.addLast(c);changed.fire(Unit)}}
+ fun canUndo()=undoStack.isNotEmpty()
+ fun canRedo()=redoStack.isNotEmpty()
+}
