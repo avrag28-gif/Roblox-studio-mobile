@@ -42,7 +42,6 @@ inline void ApplyModelWorldPivot(Model& model, const CFrame& newPivot) {
 }
 
 inline void SetWorldCFrame(Instance& instance, const CFrame& world) {
-    if (auto* part = dynamic_cast<BasePart*>(&instance)) instance.GetPropertyChangedSignal("CFrame");
     if (auto* part = dynamic_cast<BasePart*>(&instance)) part->SetCFrame(world);
     else if (auto* model = dynamic_cast<Model*>(&instance)) ApplyModelWorldPivot(*model, world);
 }
