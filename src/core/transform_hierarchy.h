@@ -27,14 +27,6 @@ inline CFrame LocalCFrame(const Instance& instance) {
     return ParentWorldCFrame(instance).Inverse() * WorldCFrame(instance);
 }
 
-inline void SetWorldCFrame(Instance& instance, const CFrame& world) {
-    if (auto* part = dynamic_cast<BasePart*>(&instance)) {
-        part->SetCFrame(world);
-    } else if (auto* model = dynamic_cast<Model*>(&instance)) {
-        ApplyModelWorldPivot(*model, world);
-    }
-}
-
 inline void SetLocalCFrame(Instance& instance, const CFrame& local) {
     SetWorldCFrame(instance, ParentWorldCFrame(instance) * local);
 }
@@ -56,6 +48,14 @@ inline void ApplyModelWorldPivot(Model& model, const CFrame& newPivot) {
     model.SetPivot(newPivot);
     for (Instance* child : model.GetChildren())
         ApplyWorldDelta(*child, delta);
+}
+
+inline void SetWorldCFrame(Instance& instance, const CFrame& world) {
+    if (auto* part = dynamic_cast<BasePart*>(&instance)) {
+        part->SetCFrame(world);
+    } else if (auto* model = dynamic_cast<Model*>(&instance)) {
+        ApplyModelWorldPivot(*model, world);
+    }
 }
 
 inline void ReparentPreserveWorld(Instance& child, Instance& newParent) {
