@@ -1,6 +1,7 @@
 #pragma once
 #include "base_part.h"
 #include "class_system.h"
+#include "transform_hierarchy.h"
 #include <algorithm>
 #include <cmath>
 
@@ -15,7 +16,7 @@ inline Vector3 ModelWorldAabbSize(const Model& model) {
         auto* part = dynamic_cast<BasePart*>(node);
         if (!part) continue;
 
-        const auto& cf = part->CFrameValue();
+        const auto cf = WorldCFrame(*part);
         const auto& q = cf.rotation;
         const float axx = 1.0f - 2.0f * (q.y*q.y + q.z*q.z);
         const float axy = 2.0f * (q.x*q.y - q.z*q.w);
