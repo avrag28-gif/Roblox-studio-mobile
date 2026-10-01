@@ -1,6 +1,7 @@
 #include "../src/editor/studio_runtime.h"
 #include <cassert>
-int main(){
+#include <iostream>
+int main(){std::cerr<<"start\n";
  rsm::StudioRuntime studio;
  auto*ws=studio.Game().GetService("Workspace"); assert(ws);
  assert(studio.CreatePart());
@@ -11,8 +12,8 @@ int main(){
  assert(p->Position().x==3&&p->Position().y==4&&p->Position().z==5);
  studio.Gizmo().SetMode(rsm::GizmoMode::Move); studio.Gizmo().SetAxis(rsm::GizmoAxis::X); studio.ApplyGizmo({2,9,9});
  assert(p->Position().x==5&&p->Position().y==4&&p->Position().z==5);
- assert(studio.DuplicateSelected()); assert(ws->GetChildren().size()==2);
- assert(studio.Play()); assert(studio.Playing()); studio.Stop(); assert(!studio.Playing());
+ assert(studio.DuplicateSelected());std::cerr<<"duplicated\n"; assert(ws->GetChildren().size()==2);
+ std::cerr<<"before play\n";assert(studio.Play());std::cerr<<"after play\n"; assert(studio.Playing()); studio.Stop();std::cerr<<"stopped\n"; assert(!studio.Playing());
  assert(studio.Render().VisibleCount()==2);
  return 0;
 }
