@@ -115,7 +115,7 @@ private:
     if(!UndoCommand(*it,apply,applyString,structuralApply))return false;
    return true;
   }
-  if(c.property=="__STRUCTURE__"){
+  if(c.property=="__STRUCTURE__"||c.property=="__TRANSFORM__"){
    return structuralApply?structuralApply(c):false;
   }
   if(c.property=="__NAME__")return applyString?applyString(c.id,c.property,c.beforeString):false;
@@ -128,7 +128,7 @@ private:
     if(!RedoCommand(child,apply,applyString,structuralApply))return false;
    return true;
   }
-  if(c.property=="__STRUCTURE__"){
+  if(c.property=="__STRUCTURE__"||c.property=="__TRANSFORM__"){
    return structuralApply?structuralApply(c):false;
   }
   if(c.property=="__NAME__")return applyString?applyString(c.id,c.property,c.afterString):false;
