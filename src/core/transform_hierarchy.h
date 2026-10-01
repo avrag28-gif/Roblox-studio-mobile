@@ -4,18 +4,24 @@
 
 namespace rsm {
 
+inline void ApplyWorldDelta(Instance& node, const CFrame& delta) {
+    if (auto* part = dynamic_cast<BasePart*>(&node)) {
+        part->SetCFrame(delta * part->CFrameValue());
+        return;
+    }
+    if (auto* model = dynamic_cast<Model*>(&node))
+        model->SetPivot(delta * model->Pivot());
+    for (Instance* child : node.GetChildren())
+        ApplyWorldDelta(*child, delta);
+}
+
 inline void ApplyModelWorldPivot(Model& model, const CFrame& newPivot) {
     const CFrame oldPivot = model.Pivot();
     const CFrame delta = newPivot * oldPivot.Inverse();
 
     model.SetPivot(newPivot);
-    for (Instance* descendant : model.GetDescendants()) {
-        if (auto* part = dynamic_cast<BasePart*>(descendant)) {
-            part->SetCFrame(delta * part->CFrameValue());
-        } else if (auto* nested = dynamic_cast<Model*>(descendant)) {
-            nested->SetPivot(delta * nested->Pivot());
-        }
-    }
+    for (Instance* child : model.GetChildren())
+        ApplyWorldDelta(*child, delta);
 }
 
 inline CFrame WorldCFrame(const Instance& instance) {
