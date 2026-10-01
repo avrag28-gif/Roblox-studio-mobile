@@ -160,7 +160,7 @@ extern "C" JNIEXPORT jboolean JNICALL Java_com_rsm_mobile_MainActivity_nativeCre
 extern "C" JNIEXPORT jstring JNICALL Java_com_rsm_mobile_MainActivity_nativeDuplicateInstance(JNIEnv* env,jclass,jstring id){
  std::lock_guard<std::mutex> lock(engineMutex);const char*sid=env->GetStringUTFChars(id,nullptr);auto it=editorIndex.find(sid?sid:"");if(it==editorIndex.end()){if(sid)env->ReleaseStringUTFChars(id,sid);return nullptr;}
  rsm::Instance*src=it->second;auto copy=src->Clone();if(!copy){if(sid)env->ReleaseStringUTFChars(id,sid);return nullptr;}
- std::string newId=sid?std::string(sid)+"#copy"+std::to_string(nextStructuralToken++):"copy";copy->SetName(src->Name()+" Copy");
+ std::string newId=sid?std::string(sid)+"#copy"+std::to_string(nextStructuralToken++):"copy";copy->SetId(newId);copy->SetName(src->Name()+" Copy");
  rsm::Instance*raw=copy.get();rsm::Instance*parent=src->Parent()?src->Parent():workspace;
  rsm::Instance::SetParent(std::move(copy),parent);editorIndex[newId]=raw;
  std::string parentId;if(src->Parent())for(const auto&e:editorIndex)if(e.second==src->Parent()){parentId=e.first;break;}
