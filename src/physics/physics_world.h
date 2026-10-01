@@ -1,6 +1,7 @@
 #pragma once
 #include "../core/base_part.h"
 #include "../math/aabb.h"
+#include "../core/world_bounds.h"
 #include <cmath>
 #include <unordered_map>
 #include <vector>
@@ -9,7 +10,7 @@ namespace rsm {
 struct RaycastHit{BasePart*part=nullptr;float distance=0;Vector3 position{};};
 class PhysicsWorld{
  Vector3 gravity_;std::unordered_map<const BasePart*,Vector3> velocity_;std::unordered_map<const BasePart*,float> sleep_;float restitution_=.05f,friction_=.8f,sleepThreshold_=.05f;
- static AABB Bounds(const BasePart*p,Vector3 pos){auto h=p->Size()*.5f;return{pos-h,pos+h};}
+ static AABB Bounds(const BasePart*p,Vector3){return WorldBounds(*p);}
 public:
  explicit PhysicsWorld(Vector3 g={0,-196.2f,0}):gravity_(g){}
  void SetRestitution(float v){restitution_=std::clamp(v,0.f,1.f);}void SetFriction(float v){friction_=std::clamp(v,0.f,1.f);}
