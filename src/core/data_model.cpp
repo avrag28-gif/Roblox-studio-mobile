@@ -1,7 +1,7 @@
 #include "data_model.h"
 #include "class_system.h"
 #include <array>
-#include <sstream
+#include <sstream>
 #include <vector>
 namespace rsm{
 
