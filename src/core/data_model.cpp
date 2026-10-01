@@ -82,6 +82,7 @@ std::unique_ptr<Instance>DataModel::Clone()const{
   auto*dst=c->GetService(entry.first);
   if(!dst)continue;
   const auto*src=entry.second;
+  dst->SetId(src->Id());
   dst->SetArchivable(src->Archivable());
   for(auto*child:src->GetChildren())if(auto copy=child->Clone())Instance::SetParent(std::move(copy),dst);
  }
