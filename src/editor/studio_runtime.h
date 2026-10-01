@@ -17,11 +17,13 @@
 #include <sstream>
 #include <cmath>
 #include <algorithm>
+#include <unordered_map>
 
 namespace rsm {
 
 class StudioRuntime {
  struct NumericState { std::string id,property; double value=0; };
+ struct TransformRecord { std::vector<NumericState> before,after; };
  DataModel editor_;
  SelectionService selection_;
  GizmoController gizmo_;
@@ -31,6 +33,8 @@ class StudioRuntime {
  OutputConsole output_;
  ScriptEditorModel script_;
  ChangeHistory history_;
+ std::unordered_map<std::string,TransformRecord> transformRecords_;
+ std::uint64_t transformSerial_=0;
  bool playing_=false;
 
  Instance* Find(const std::string&id){return editor_.FindById(id);}
@@ -89,12 +93,22 @@ class StudioRuntime {
   }
   return out;
  }
- void RecordTransformDiff(const std::vector<NumericState>&before,const std::vector<NumericState>&after){
-  history_.BeginTransaction();
-  for(size_t i=0;i<before.size()&&i<after.size();++i)
-   if(before[i].id==after[i].id&&before[i].property==after[i].property&&std::fabs(before[i].value-after[i].value)>1e-7)
-    history_.Push({before[i].id,before[i].property,before[i].value,after[i].value});
-  history_.EndTransaction();
+ std::string RecordTransformDiff(const std::vector<NumericState>&before,const std::vector<NumericState>&after){
+  bool changed=false;
+  if(before.size()!=after.size())changed=true;
+  else for(size_t i=0;i<before.size();++i)
+   if(before[i].id!=after[i].id||before[i].property!=after[i].property||std::fabs(before[i].value-after[i].value)>1e-7){changed=true;break;}
+  if(!changed)return {};
+  const std::string token="T-"+std::to_string(++transformSerial_);
+  transformRecords_[token]={before,after};
+  history_.Push({"","__TRANSFORM__",0,0,token});
+  return token;
+ }
+ bool ApplyTransformSnapshot(const ChangeHistory::Command&c,bool undo){
+  auto it=transformRecords_.find(c.payload);if(it==transformRecords_.end())return false;
+  const auto&states=undo?it->second.before:it->second.after;
+  for(const auto&s:states)if(!ApplyTransformValue(s.id,s.property,s.value))return false;
+  return true;
  }
 
 public:
