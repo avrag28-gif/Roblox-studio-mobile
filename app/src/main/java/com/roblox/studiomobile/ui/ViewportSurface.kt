@@ -17,6 +17,8 @@ class ViewportSurface(
     private var gesture = 0
     var onPicked: ((com.roblox.studiomobile.core.Instance) -> Unit)? = null
     var onTransformDrag: ((Float, Float) -> Boolean)? = null
+    var onTransformGestureStart: (() -> Unit)? = null
+    var onTransformGestureEnd: ((Boolean) -> Unit)? = null
     private var downX = 0f
     private var downY = 0f
 
@@ -36,6 +38,7 @@ class ViewportSurface(
                 downX = event.x
                 downY = event.y
                 gesture = 1
+                onTransformGestureStart?.invoke()
                 return true
             }
             MotionEvent.ACTION_POINTER_DOWN -> {
@@ -75,10 +78,12 @@ class ViewportSurface(
                     if (hit != null) onPicked?.invoke(hit)
                 }
                 gesture = 0
+                onTransformGestureEnd?.invoke(true)
                 return true
             }
             MotionEvent.ACTION_CANCEL -> {
                 gesture = 0
+                onTransformGestureEnd?.invoke(false)
                 return true
             }
         }
