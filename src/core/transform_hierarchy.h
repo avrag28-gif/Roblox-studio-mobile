@@ -2,6 +2,7 @@
 #include "base_part.h"
 #include "class_system.h"
 #include "transform_types.h"
+#include <algorithm>
 
 namespace rsm {
 
