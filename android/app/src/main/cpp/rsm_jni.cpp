@@ -57,47 +57,46 @@ static void RecordStructure(const std::string&payload){
  if(!applyingHistory)changeHistory.Push({"","__STRUCTURE__",0,0,payload});
 }
 
-static bool IsInSubtree(const rsm::Instance*root,const rsm::Instance*node){\n if(!root||!node)return false; if(root==node)return true; for(auto*x:root->GetDescendants())if(x==node)return true; return false;\n}\n\nstatic bool RestoreStructural(const rsm::ChangeHistory::Command&cmd,bool undo){
- std::vector<std::string> f;std::string part;std::stringstream ss(cmd.payload);
+static bool IsInSubtree(const rsm::Instance*root,const rsm::Instance*node){
+ if(!root||!node)return false;
+ if(root==node)return true;
+ for(auto*x:root->GetDescendants())if(x==node)return true;
+ return false;
+}
+static rsm::Instance* ResolveParent(const std::string&id){
+ if(id.empty())return workspace;
+ auto it=editorIndex.find(id);
+ return it==editorIndex.end()?nullptr:it->second;
+}
+static bool RestoreStructural(const rsm::ChangeHistory::Command&cmd,bool undo){
+ std::vector<std::string>f;std::string part;std::stringstream ss(cmd.payload);
  while(std::getline(ss,part,'|'))f.push_back(part);
  if(f.size()<4)return false;
  const std::string&op=f[0],&id=f[1],&parentId=f[2],&token=f[3];
  auto sit=structuralSnapshots.find(token);
- auto parentIt=editorIndex.find(parentId);
- if(sit==structuralSnapshots.end()||parentIt==editorIndex.end())return false;
-
- const bool restore=(op=="DELETE"&&undo)||(op=="CREATE"&&!undo)||(op=="REPARENT"&&undo);
- if(op=="REPARENT" && undo){
+ if(sit==structuralSnapshots.end())return false;
+ if(op=="REPARENT"){
   auto it=editorIndex.find(id);if(it==editorIndex.end())return false;
-  rsm::Instance*oldParent=ResolveParent(sit->second.parentId);if(!oldParent)return false;
-  it->second->SetParent(oldParent);return true;
+  rsm::Instance*target=ResolveParent(undo?sit->second.parentId:parentId);
+  if(!target||target==it->second||IsInSubtree(it->second,target))return false;
+  it->second->SetParent(target);return true;
  }
- if(op=="REPARENT" && !undo){
-  auto it=editorIndex.find(id);if(it==editorIndex.end())return false;
-  it->second->SetParent(restoreParent);return true;
- }
+ rsm::Instance*restoreParent=ResolveParent(parentId);
+ if(!restoreParent)return false;
+ const bool restore=(op=="DELETE"&&undo)||(op=="CREATE"&&!undo);
  if(restore){
   if(editorIndex.find(id)!=editorIndex.end())return false;
-  auto copy=sit->second.tree->Clone();
-  if(!copy)return false;
+  auto copy=sit->second.tree->Clone();if(!copy)return false;
   rsm::Instance*raw=copy.get();
   rsm::Instance::SetParent(std::move(copy),restoreParent);
   auto ids=sit->second.ids;
-  std::vector<rsm::Instance*> restored;
-  restored.push_back(raw);
-  auto walk=[](rsm::Instance*root){
-   std::vector<rsm::Instance*>v;
-   for(auto*x:root->GetDescendants())v.push_back(x);
-   return v;
-  };
-  auto desc=walk(raw);
-  for(auto*x:desc)restored.push_back(x);
+  std::vector<rsm::Instance*>restored{raw};
+  for(auto*x:raw->GetDescendants())restored.push_back(x);
   if(restored.size()!=ids.size())return false;
   for(std::size_t i=0;i<ids.size();++i)editorIndex[ids[i].second]=restored[i];
   return true;
  }
- auto it=editorIndex.find(id);
- if(it==editorIndex.end()||it->second==workspace)return false;
+ auto it=editorIndex.find(id);if(it==editorIndex.end()||it->second==workspace)return false;
  rsm::Instance*root=it->second;
  std::vector<std::string>removeIds;
  for(const auto&e:editorIndex)if(IsInSubtree(root,e.second))removeIds.push_back(e.first);
