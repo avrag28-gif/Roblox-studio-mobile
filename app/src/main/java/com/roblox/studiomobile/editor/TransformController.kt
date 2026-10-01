@@ -7,6 +7,14 @@ enum class TransformTool { Select, Move, Scale }
 class TransformController(private val runtime: CoreRuntime) {
     var tool = TransformTool.Select
 
+    fun beginGesture() {
+        if (tool != TransformTool.Select) runtime.transactions.beginBatch()
+    }
+
+    fun endGesture(commit: Boolean = true) {
+        if (tool != TransformTool.Select) runtime.transactions.endBatch(commit)
+    }
+
     fun commitMove(instance: Instance, start: Vec3, end: Vec3) {
         if (start == end) return
         runtime.properties.set(instance, "Position", end)
