@@ -1,6 +1,7 @@
 #pragma once
 #include "instance.h"
 #include <unordered_map>
+#include <string>
 namespace rsm{
 class DataModel final:public Instance{
 public:
@@ -9,6 +10,10 @@ public:
  void ReplaceContentsFrom(const DataModel&source);
  Instance*GetService(const std::string&);
  const Instance*GetService(const std::string&)const;
+ Instance*Workspace(){return GetService("Workspace");}
+ const Instance*Workspace()const{return GetService("Workspace");}
+ Instance*ResolvePath(const std::string&path);
+ const Instance*ResolvePath(const std::string&path)const;
  std::unique_ptr<Instance>Clone()const override;
 private:
  std::unordered_map<std::string,Instance*>services_;
