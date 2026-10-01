@@ -95,8 +95,8 @@ public class MainActivity extends Activity {
     return bar;
   }
 
-  void addPart(){Obj o=new Obj("Part");o.x=objects.size()*2-2;o.y=1;objects.add(o);select(o);dirty=true;append("INFO","Created Part");}
-  void addModel(){Obj o=new Obj("Model");o.type="Model";o.sx=o.sy=o.sz=4;o.y=2;o.color=Color.rgb(190,100,220);objects.add(o);select(o);dirty=true;append("INFO","Created Model");}
+  void addPart(){Obj o=new Obj("Part");o.x=objects.size()*2-2;o.y=1;objects.add(o);nativeCreateInstance(o.id,o.name,o.type,o.parent);syncNativeScene();select(o);dirty=true;append("INFO","Created Part");}
+  void addModel(){Obj o=new Obj("Model");o.type="Model";o.sx=o.sy=o.sz=4;o.y=2;o.color=Color.rgb(190,100,220);objects.add(o);nativeCreateInstance(o.id,o.name,o.type,o.parent);syncNativeScene();select(o);dirty=true;append("INFO","Created Model");}
   void togglePlay(Button b){
     playing=!playing;b.setText(playing?"■  Stop":"▶  Play");nativeSetPlaying(playing);status.setText(playing?"●  PLAY   •   runtime scene active":"●  EDIT   •   "+objects.size()+" objects   •   Ready");
     append("INFO",playing?"Play session started from isolated runtime snapshot.":"Play session stopped; editor scene preserved.");viewport.invalidate();
@@ -117,6 +117,9 @@ public class MainActivity extends Activity {
   static native void nativeSetPlaying(boolean playing);
   static native boolean nativeSetProperty(String name,String property,double value);
   static native String nativeGetSceneSnapshot();
+  static native boolean nativeCreateInstance(String id,String name,String type,String parentId);
+  static native boolean nativeDeleteInstance(String id);
+  static native boolean nativeSetParent(String id,String parentId);
   void refreshExplorer(){
     explorer.removeAllViews();
     TextView h=text("EXPLORER",13);h.setTypeface(Typeface.DEFAULT,Typeface.BOLD);explorer.addView(h,new LinearLayout.LayoutParams(-1,dp(46)));
@@ -174,13 +177,13 @@ public class MainActivity extends Activity {
     names.add("Workspace");choices.add(null);
     for(Obj o:objects) if(o!=selected && "Model".equals(o.type) && !isDescendant(o,selected)) {names.add(o.name);choices.add(o);}
     new AlertDialog.Builder(this).setTitle("Reparent "+selected.name).setItems(names.toArray(new String[0]),(d,w)->{
-      selected.parent=choices.get(w)==null?"Workspace":choices.get(w).id;changed();append("INFO","Reparented "+selected.name);
+      selected.parent=choices.get(w)==null?"Workspace":choices.get(w).id;nativeSetParent(selected.id,selected.parent);changed();append("INFO","Reparented "+selected.name);
     }).show();
   }
   boolean isDescendant(Obj candidate,Obj node){String p=candidate.parent;while(!"Workspace".equals(p)){if(p.equals(node.id))return true;Obj q=find(p);if(q==null)break;p=q.parent;}return false;}
   Obj find(String id){for(Obj o:objects)if(o.id.equals(id))return o;return null;}
   void duplicate(){if(selected==null)return;Obj n=new Obj(selected.name+" Copy");n.type=selected.type;n.parent=selected.parent;n.x=selected.x+2;n.y=selected.y;n.z=selected.z;n.sx=selected.sx;n.sy=selected.sy;n.sz=selected.sz;n.color=selected.color;n.anchored=selected.anchored;n.collide=selected.collide;objects.add(n);select(n);changed();append("INFO","Duplicated "+selected.name);}
-  void deleteSelected(){if(selected==null)return;String n=selected.name;String removed=selected.id;ArrayList<Obj> gone=new ArrayList<>();for(Obj o:objects){String p=o.parent;while(!"Workspace".equals(p)){if(p.equals(removed)){gone.add(o);break;}Obj q=find(p);if(q==null)break;p=q.parent;}}gone.add(selected);objects.removeAll(gone);selected=null;changed();append("INFO","Deleted "+n);}
+  void deleteSelected(){if(selected==null)return;String n=selected.name;String removed=selected.id;nativeDeleteInstance(removed);ArrayList<Obj> gone=new ArrayList<>();for(Obj o:objects){String p=o.parent;while(!"Workspace".equals(p)){if(p.equals(removed)){gone.add(o);break;}Obj q=find(p);if(q==null)break;p=q.parent;}}gone.add(selected);objects.removeAll(gone);selected=null;changed();append("INFO","Deleted "+n);}
   void cycleColor(){int[] c={Color.rgb(90,160,240),Color.rgb(240,100,90),Color.rgb(100,220,130),Color.rgb(220,190,70),Color.rgb(190,100,220),Color.WHITE};int i=0;for(int j=0;j<c.length;j++)if(selected.color==c[j])i=(j+1)%c.length;selected.color=c[i];changed();refreshProps();}
   
   void bottom(String tab){
