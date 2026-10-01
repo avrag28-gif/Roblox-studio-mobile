@@ -8,6 +8,7 @@
 #include "scripting/luau_service.h"
 #include <memory>
 #include <mutex>
+#include <unordered_map>
 #include "platform/android_lifecycle.h"
 static rsm::AndroidLifecycle lifecycle;
 static rsm::DataModel game;
@@ -17,6 +18,7 @@ static rsm::Camera camera;
 static std::string lastScriptLog;
 static std::unique_ptr<rsm::DataModel> runtimeGame;
 static std::mutex engineMutex;
+static std::unordered_map<std::string, rsm::Instance*> editorIndex;
 static rsm::PhysicsWorld runtimePhysics;
 extern "C" JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM*,void*){game.InitializeDefaultServices();workspace=game.GetService("Workspace");return JNI_VERSION_1_6;}
 extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeSurfaceCreated(JNIEnv*,jclass){
@@ -41,10 +43,11 @@ extern "C" JNIEXPORT jboolean JNICALL Java_com_rsm_mobile_MainActivity_nativeRun
 extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeSyncScene(JNIEnv* env,jclass,jfloatArray data,jobjectArray names,jobjectArray types){
  std::lock_guard<std::mutex> lock(engineMutex);
  if(!workspace)return; for(auto* c:workspace->GetChildren()) c->Destroy();
+ editorIndex.clear();
  jsize n=env->GetArrayLength(data); if(n%13)return; jsize count=n/13;
  if(env->GetArrayLength(names)!=count||env->GetArrayLength(types)!=count)return;
  std::vector<jfloat> v(n);env->GetFloatArrayRegion(data,0,n,v.data());
- for(int k=0;k<count;++k){int i=k*13;auto nameObj=(jstring)env->GetObjectArrayElement(names,k);auto typeObj=(jstring)env->GetObjectArrayElement(types,k);const char* name=env->GetStringUTFChars(nameObj,nullptr);const char* type=env->GetStringUTFChars(typeObj,nullptr);std::string className=type?type:"Part";if(className!="Part"&&className!="Model"&&className!="Folder"&&className!="Script"&&className!="LocalScript"&&className!="ModuleScript")className="Part";auto p=rsm::InstanceFactory::New(className);if(name)p->SetName(name);if(auto*part=dynamic_cast<rsm::BasePart*>(p.get())){part->SetPosition({v[i],v[i+1],v[i+2]});part->SetSize({v[i+3],v[i+4],v[i+5]});auto cf=part->CFrameValue();auto qx=rsm::Quaternion::FromAxisAngle({1,0,0},v[i+6]),qy=rsm::Quaternion::FromAxisAngle({0,1,0},v[i+7]),qz=rsm::Quaternion::FromAxisAngle({0,0,1},v[i+8]);cf.rotation=(qz*qy*qx).Normalized();part->SetCFrame(cf);part->SetColor({v[i+9],v[i+10],v[i+11]});part->SetAnchored(v[i+12]>0.5f);}rsm::Instance::SetParent(std::move(p),workspace);if(name)env->ReleaseStringUTFChars(nameObj,name);if(type)env->ReleaseStringUTFChars(typeObj,type);env->DeleteLocalRef(nameObj);env->DeleteLocalRef(typeObj);}
+ for(int k=0;k<count;++k){int i=k*13;auto nameObj=(jstring)env->GetObjectArrayElement(names,k);auto typeObj=(jstring)env->GetObjectArrayElement(types,k);const char* name=env->GetStringUTFChars(nameObj,nullptr);const char* type=env->GetStringUTFChars(typeObj,nullptr);std::string className=type?type:"Part";if(className!="Part"&&className!="Model"&&className!="Folder"&&className!="Script"&&className!="LocalScript"&&className!="ModuleScript")className="Part";auto p=rsm::InstanceFactory::New(className);if(name)p->SetName(name);if(auto*part=dynamic_cast<rsm::BasePart*>(p.get())){part->SetPosition({v[i],v[i+1],v[i+2]});part->SetSize({v[i+3],v[i+4],v[i+5]});auto cf=part->CFrameValue();auto qx=rsm::Quaternion::FromAxisAngle({1,0,0},v[i+6]),qy=rsm::Quaternion::FromAxisAngle({0,1,0},v[i+7]),qz=rsm::Quaternion::FromAxisAngle({0,0,1},v[i+8]);cf.rotation=(qz*qy*qx).Normalized();part->SetCFrame(cf);part->SetColor({v[i+9],v[i+10],v[i+11]});part->SetAnchored(v[i+12]>0.5f);}rsm::Instance::SetParent(std::move(p),workspace);if(name){editorIndex[name]=workspace->GetChildren().back();env->ReleaseStringUTFChars(nameObj,name);}if(type)env->ReleaseStringUTFChars(typeObj,type);env->DeleteLocalRef(nameObj);env->DeleteLocalRef(typeObj);}
 }
 
 extern "C" JNIEXPORT jint JNICALL Java_com_rsm_mobile_MainActivity_nativeRaycast(JNIEnv*,jclass,jfloat x,jfloat y,jfloat w,jfloat h){
@@ -52,6 +55,8 @@ extern "C" JNIEXPORT jint JNICALL Java_com_rsm_mobile_MainActivity_nativeRaycast
  auto hit=rsm::PhysicsWorld().Raycast(game,camera.ScreenRay(x,y,w,h)); if(!hit.part)return -1;
  int index=0; for(auto*child:workspace->GetChildren()){if(child==hit.part)return index; ++index;} return -1;
 }
+
+extern "C" JNIEXPORT jboolean JNICALL Java_com_rsm_mobile_MainActivity_nativeSetProperty(JNIEnv* env,jclass,jstring name,jstring property,jdouble value){std::lock_guard<std::mutex> lock(engineMutex);const char*n=env->GetStringUTFChars(name,nullptr);const char*p=env->GetStringUTFChars(property,nullptr);auto it=editorIndex.find(n?n:"");bool ok=false;if(it!=editorIndex.end()){if(auto*part=dynamic_cast<rsm::BasePart*>(it->second)){if(std::string(p)=="PositionX"){auto v=part->Position();v.x=value;part->SetPosition(v);ok=true;}else if(std::string(p)=="PositionY"){auto v=part->Position();v.y=value;part->SetPosition(v);ok=true;}else if(std::string(p)=="PositionZ"){auto v=part->Position();v.z=value;part->SetPosition(v);ok=true;}else if(std::string(p)=="SizeX"){auto v=part->Size();v.x=value;part->SetSize(v);ok=true;}else if(std::string(p)=="SizeY"){auto v=part->Size();v.y=value;part->SetSize(v);ok=true;}else if(std::string(p)=="SizeZ"){auto v=part->Size();v.z=value;part->SetSize(v);ok=true;}else if(std::string(p)=="Anchored"){part->SetAnchored(value!=0);ok=true;}else if(std::string(p)=="CanCollide"){part->SetCanCollide(value!=0);ok=true;}}}if(n)env->ReleaseStringUTFChars(name,n);if(p)env->ReleaseStringUTFChars(property,p);return ok?JNI_TRUE:JNI_FALSE;}
 
 extern "C" JNIEXPORT void JNICALL Java_com_rsm_mobile_MainActivity_nativeSetPlaying(JNIEnv*,jclass,jboolean playing){
  std::lock_guard<std::mutex> lock(engineMutex);
