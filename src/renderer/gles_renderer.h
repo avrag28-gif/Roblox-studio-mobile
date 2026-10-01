@@ -1,5 +1,6 @@
 #pragma once
 #include "renderer.h"
+#include "../core/transform_hierarchy.h"
 #include <cmath>
 #ifdef __ANDROID__
 #include <GLES3/gl3.h>
@@ -59,14 +60,14 @@ private:
   float view[16]={rx,ux,-dx,0,ry,uy,-dy,0,rz,uz,-dz,0,-(rx*camera_.position.x+ry*camera_.position.y+rz*camera_.position.z),-(ux*camera_.position.x+uy*camera_.position.y+uz*camera_.position.z),dx*camera_.position.x+dy*camera_.position.y+dz*camera_.position.z,1};
   float aspect=h_?float(w_)/h_:1;float f=1/std::tan(camera_.fov*3.14159265f/360.f),n=camera_.nearPlane,farv=camera_.farPlane;
   float proj[16]={f/aspect,0,0,0,0,f,0,0,0,0,(farv+n)/(n-farv),-1,0,0,(2*farv*n)/(n-farv),0};float vp[16];mul(proj,view,vp);
-  auto pos=p.Position();auto q=p.CFrameValue().rotation.Normalized();float xx=q.x*q.x,yy=q.y*q.y,zz=q.z*q.z,xy=q.x*q.y,xz=q.x*q.z,yz=q.y*q.z,wx=q.w*q.x,wy=q.w*q.y,wz=q.w*q.z;
+  auto world=WorldCFrame(p);auto pos=world.position;auto q=world.rotation.Normalized();float xx=q.x*q.x,yy=q.y*q.y,zz=q.z*q.z,xy=q.x*q.y,xz=q.x*q.z,yz=q.y*q.z,wx=q.w*q.x,wy=q.w*q.y,wz=q.w*q.z;
   float tr[16]={1-2*(yy+zz),2*(xy+wz),2*(xz-wy),0,2*(xy-wz),1-2*(xx+zz),2*(yz+wx),0,2*(xz+wy),2*(yz-wx),1-2*(xx+yy),0,pos.x,pos.y,pos.z,1};
   float m[16];mul(vp,tr,m);out[0]=m[0]*p.Size().x;out[1]=m[1]*p.Size().x;out[2]=m[2]*p.Size().x;out[3]=m[3]*p.Size().x;
   out[4]=m[4]*p.Size().y;out[5]=m[5]*p.Size().y;out[6]=m[6]*p.Size().y;out[7]=m[7]*p.Size().y;
   out[8]=m[8]*p.Size().z;out[9]=m[9]*p.Size().z;out[10]=m[10]*p.Size().z;out[11]=m[11]*p.Size().z;out[12]=m[12];out[13]=m[13];out[14]=m[14];out[15]=m[15];
  }
  void drawPart(const BasePart& p){
-  float x=p.Position().x,y=p.Position().y,z=p.Position().z,sx=p.Size().x*.5f,sy=p.Size().y*.5f,sz=p.Size().z*.5f;
+  auto world=WorldCFrame(p); float x=world.position.x,y=world.position.y,z=world.position.z,sx=p.Size().x*.5f,sy=p.Size().y*.5f,sz=p.Size().z*.5f;
   const float v[]={-sx,-sy,-sz,sx,-sy,-sz,sx,sy,-sz,-sx,sy,-sz,-sx,-sy,sz,sx,-sy,sz,sx,sy,sz,-sx,sy,sz};
   const unsigned short idx[]={0,1,2,2,3,0,4,6,5,6,4,7,0,4,5,5,1,0,3,2,6,6,7,3,1,5,6,6,2,1,4,0,3,3,7,4};
   glBindVertexArray(vao_);glBindBuffer(GL_ARRAY_BUFFER,vbo_);glBufferData(GL_ARRAY_BUFFER,sizeof(v),v,GL_STREAM_DRAW);
