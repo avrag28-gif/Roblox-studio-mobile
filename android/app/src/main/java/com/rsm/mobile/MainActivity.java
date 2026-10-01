@@ -184,7 +184,11 @@ static class Obj {
     section("APPEARANCE");
     EditText nameEdit=edit(selected.name);nameEdit.setHint("Name");nameEdit.setOnFocusChangeListener((v,has)->{if(!has&&selected!=null&&!nameEdit.getText().toString().trim().isEmpty()){selected.name=nameEdit.getText().toString().trim();nativeSetName(selected.id,selected.name);changed();}});props.addView(labelRow("Name",nameEdit));
     Button color=btn("Color   "+selected.color);color.setOnClickListener(v->cycleColor());props.addView(color);
-    row1("Transparency",selected.transparency);
+    rowScalar("Transparency",selected.transparency,0f,1f,(v)->{selected.transparency=Math.max(0f,Math.min(1f,v));nativeSetProperty(selected.id,"Transparency",selected.transparency);changed();});
+    if("Part".equals(selected.type)||"MeshPart".equals(selected.type)||"BasePart".equals(selected.type)){
+      Button material=btn("Material   "+materialName(selected.material));material.setOnClickListener(v->chooseEnum("Material",new String[]{"Plastic","Wood","Metal","Glass","Concrete"},selected.material,i->{selected.material=i;nativeSetProperty(selected.id,"Material",i);changed();refreshProps();}));props.addView(material);
+      Button shape=btn("Shape   "+shapeName(selected.shape));shape.setOnClickListener(v->chooseEnum("Shape",new String[]{"Block","Sphere","Cylinder","Wedge","CornerWedge"},selected.shape,i->{selected.shape=i;nativeSetProperty(selected.id,"Shape",i);changed();refreshProps();}));props.addView(shape);
+    }
     section("PHYSICS");
     Switch anchored=new Switch(this);anchored.setText("Anchored");anchored.setTextColor(Color.WHITE);anchored.setChecked(selected.anchored);anchored.setOnCheckedChangeListener((b,v)->{selected.anchored=v;nativeSetProperty(selected.id,"Anchored",v?1:0);changed();});props.addView(anchored);
     Switch touch=new Switch(this);touch.setText("CanTouch");touch.setTextColor(Color.WHITE);touch.setChecked(selected.canTouch);touch.setOnCheckedChangeListener((b,v)->{selected.canTouch=v;nativeSetProperty(selected.id,"CanTouch",v?1:0);changed();});props.addView(touch);
@@ -200,13 +204,31 @@ static class Obj {
   void row3(String label,float a,float b,float c,Triple cb){
     LinearLayout line=new LinearLayout(this);line.setOrientation(LinearLayout.HORIZONTAL);line.addView(text(label,11),new LinearLayout.LayoutParams(dp(72),dp(48)));
     EditText x=number(a),y=number(b),z=number(c);line.addView(x,new LinearLayout.LayoutParams(0,dp(48),1));line.addView(y,new LinearLayout.LayoutParams(0,dp(48),1));line.addView(z,new LinearLayout.LayoutParams(0,dp(48),1));
-    TextWatcherCommit w=new TextWatcherCommit(()->{float vx=val(x,a),vy=val(y,b),vz=val(z,c);cb.go(vx,vy,vz);if(selected!=null){if(label.equals("Position")){nativeSetProperty(selected.id,"PositionX",vx);nativeSetProperty(selected.id,"PositionY",vy);nativeSetProperty(selected.id,"PositionZ",vz);}else if(label.equals("Size")){nativeSetProperty(selected.id,"SizeX",vx);nativeSetProperty(selected.id,"SizeY",vy);nativeSetProperty(selected.id,"SizeZ",vz);}else if(label.equals("Rotation")){nativeSetProperty(selected.id,"RotationX",(float)Math.toRadians(vx));nativeSetProperty(selected.id,"RotationY",(float)Math.toRadians(vy));nativeSetProperty(selected.id,"RotationZ",(float)Math.toRadians(vz));}}});x.addTextChangedListener(w);y.addTextChangedListener(w);z.addTextChangedListener(w);props.addView(line);
+    final boolean[] transaction={false};
+    Runnable begin=()->{if(!transaction[0]){nativeBeginHistoryTransaction();transaction[0]=true;}};
+    Runnable end=()->{if(transaction[0]&&!x.hasFocus()&&!y.hasFocus()&&!z.hasFocus()){nativeEndHistoryTransaction();transaction[0]=false;}};
+    View.OnFocusChangeListener focus=(v,has)->{if(has)begin.run();else line.postDelayed(end,120);};
+    x.setOnFocusChangeListener(focus);y.setOnFocusChangeListener(focus);z.setOnFocusChangeListener(focus);
+    TextWatcherCommit w=new TextWatcherCommit(()->{float vx=val(x,a),vy=val(y,b),vz=val(z,c);cb.go(vx,vy,vz);if(selected!=null){if(label.equals("Position")){nativeSetProperty(selected.id,"PositionX",vx);nativeSetProperty(selected.id,"PositionY",vy);nativeSetProperty(selected.id,"PositionZ",vz);}else if(label.equals("Size")){nativeSetProperty(selected.id,"SizeX",vx);nativeSetProperty(selected.id,"SizeY",vy);nativeSetProperty(selected.id,"SizeZ",vz);}else if(label.equals("Rotation")){nativeSetProperty(selected.id,"RotationX",(float)Math.toRadians(vx));nativeSetProperty(selected.id,"RotationY",(float)Math.toRadians(vy));nativeSetProperty(selected.id,"RotationZ",(float)Math.toRadians(vz));}}});
+    x.addTextChangedListener(w);y.addTextChangedListener(w);z.addTextChangedListener(w);props.addView(line);
   }
+  void rowScalar(String label,float value,float min,float max,java.util.function.Consumer<Float> cb){
+    LinearLayout line=new LinearLayout(this);line.setOrientation(LinearLayout.HORIZONTAL);line.addView(text(label,11),new LinearLayout.LayoutParams(dp(92),dp(48)));
+    EditText field=number(value);line.addView(field,new LinearLayout.LayoutParams(0,dp(48),1));
+    final boolean[] transaction={false};
+    field.setOnFocusChangeListener((v,has)->{if(has){if(!transaction[0]){nativeBeginHistoryTransaction();transaction[0]=true;}}else line.postDelayed(()->{if(transaction[0]&&!field.hasFocus()){nativeEndHistoryTransaction();transaction[0]=false;}},120);});
+    field.addTextChangedListener(new TextWatcherCommit(()->{if(selected==null)return;float v=val(field,value);cb.accept(Math.max(min,Math.min(max,v)));}));
+    props.addView(line);
+  }
+  void chooseEnum(String title,String[] values,int selectedIndex,java.util.function.IntConsumer cb){
+    new AlertDialog.Builder(this).setTitle(title).setSingleChoiceItems(values,selectedIndex,(d,which)->{d.dismiss();cb.accept(which);}).show();
+  }
+  String materialName(int v){String[] a={"Plastic","Wood","Metal","Glass","Concrete"};return v>=0&&v<a.length?a[v]:"Plastic";}
+  String shapeName(int v){String[] a={"Block","Sphere","Cylinder","Wedge","CornerWedge"};return v>=0&&v<a.length?a[v]:"Block";}
   float val(EditText e,float d){try{return Float.parseFloat(e.getText().toString());}catch(Exception ex){return d;}}
   EditText number(float n){EditText e=edit(String.format(Locale.US,"%.2f",n));e.setInputType(2|8192);return e;}
   EditText edit(String s){EditText e=new EditText(this);e.setText(s);e.setTextColor(Color.WHITE);e.setTextSize(12);e.setSingleLine();e.setPadding(dp(7),0,dp(7),0);return e;}
   View labelRow(String l,View v){LinearLayout x=new LinearLayout(this);x.addView(text(l,11),new LinearLayout.LayoutParams(dp(72),dp(46)));x.addView(v,new LinearLayout.LayoutParams(0,dp(46),1));return x;}
-  void row1(String l,float n){props.addView(text(l+"     "+n,12));}
   static class TextWatcherCommit implements android.text.TextWatcher{
     Runnable r;TextWatcherCommit(Runnable x){r=x;}public void beforeTextChanged(CharSequence s,int a,int c,int d){}public void onTextChanged(CharSequence s,int a,int b,int c){ }public void afterTextChanged(android.text.Editable e){r.run();}
   }
