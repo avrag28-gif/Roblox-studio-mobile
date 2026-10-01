@@ -103,13 +103,13 @@ public class MainActivity extends Activity {
   }
 
   void refresh(){refreshExplorer();refreshProps();syncNativeScene();viewport.invalidate();status.setText((playing?"●  PLAY":"●  EDIT")+"   •   "+objects.size()+" objects"+(dirty?"   •   Unsaved":"   •   Saved"));}
-  void syncNativeScene(){ if(nativeViewport==null)return; float[] data=new float[objects.size()*13]; String[] names=new String[objects.size()]; String[] types=new String[objects.size()]; int i=0,k=0; for(Obj o:objects){data[i++]=o.x;data[i++]=o.y;data[i++]=o.z;data[i++]=o.sx;data[i++]=o.sy;data[i++]=o.sz;data[i++]=o.rx;data[i++]=o.ry;data[i++]=o.rz;data[i++]=Color.red(o.color)/255f;data[i++]=Color.green(o.color)/255f;data[i++]=Color.blue(o.color)/255f;data[i++]=o.anchored?1:0;names[k]=o.name;types[k]=o.type.equals("Model")?"Model":"Part";k++;} nativeSyncScene(data,names,types); }
+  void syncNativeScene(){ if(nativeViewport==null)return; float[] data=new float[objects.size()*14]; String[] ids=new String[objects.size()]; String[] names=new String[objects.size()]; String[] types=new String[objects.size()]; String[] parents=new String[objects.size()]; int i=0,k=0; for(Obj o:objects){data[i++]=o.x;data[i++]=o.y;data[i++]=o.z;data[i++]=o.sx;data[i++]=o.sy;data[i++]=o.sz;data[i++]=o.rx;data[i++]=o.ry;data[i++]=o.rz;data[i++]=Color.red(o.color)/255f;data[i++]=Color.green(o.color)/255f;data[i++]=Color.blue(o.color)/255f;data[i++]=o.anchored?1:0;data[i++]=o.collide?1:0;ids[k]=o.id;names[k]=o.name;types[k]=o.type;parents[k]=o.parent;k++;} nativeSyncScene(data,ids,names,types,parents); }
   static native void nativeSurfaceCreated();
   static native void nativeSurfaceChanged(int w,int h);
   static native void nativeSurfaceDraw();
   static native void nativeSurfaceDestroyed();
   static native void nativeLifecycle(int state);
-  static native void nativeSyncScene(float[] data, String[] names, String[] types);
+  static native void nativeSyncScene(float[] data, String[] ids, String[] names, String[] types, String[] parents);
   static native void nativeCameraOrbit(float yaw,float pitch);
   static native void nativeCameraZoom(float delta);
   static native boolean nativeRunScript(String source);
