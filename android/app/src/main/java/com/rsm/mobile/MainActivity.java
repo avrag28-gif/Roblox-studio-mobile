@@ -115,6 +115,7 @@ public class MainActivity extends Activity {
   static native boolean nativeRunScript(String source);
   static native int nativeRaycast(float x,float y,float w,float h);
   static native void nativeSetPlaying(boolean playing);
+  static native boolean nativeSetProperty(String name,String property,double value);
   void refreshExplorer(){
     explorer.removeAllViews();
     TextView h=text("EXPLORER",13);h.setTypeface(Typeface.DEFAULT,Typeface.BOLD);explorer.addView(h,new LinearLayout.LayoutParams(-1,dp(46)));
@@ -153,7 +154,7 @@ public class MainActivity extends Activity {
   void row3(String label,float a,float b,float c,Triple cb){
     LinearLayout line=new LinearLayout(this);line.setOrientation(LinearLayout.HORIZONTAL);line.addView(text(label,11),new LinearLayout.LayoutParams(dp(72),dp(48)));
     EditText x=number(a),y=number(b),z=number(c);line.addView(x,new LinearLayout.LayoutParams(0,dp(48),1));line.addView(y,new LinearLayout.LayoutParams(0,dp(48),1));line.addView(z,new LinearLayout.LayoutParams(0,dp(48),1));
-    TextWatcherCommit w=new TextWatcherCommit(()->{cb.go(val(x,a),val(y,b),val(z,c));});x.addTextChangedListener(w);y.addTextChangedListener(w);z.addTextChangedListener(w);props.addView(line);
+    TextWatcherCommit w=new TextWatcherCommit(()->{float vx=val(x,a),vy=val(y,b),vz=val(z,c);cb.go(vx,vy,vz);if(selected!=null){if(label.equals("Position")){nativeSetProperty(selected.name,"PositionX",vx);nativeSetProperty(selected.name,"PositionY",vy);nativeSetProperty(selected.name,"PositionZ",vz);}else if(label.equals("Size")){nativeSetProperty(selected.name,"SizeX",vx);nativeSetProperty(selected.name,"SizeY",vy);nativeSetProperty(selected.name,"SizeZ",vz);}}});x.addTextChangedListener(w);y.addTextChangedListener(w);z.addTextChangedListener(w);props.addView(line);
   }
   float val(EditText e,float d){try{return Float.parseFloat(e.getText().toString());}catch(Exception ex){return d;}}
   EditText number(float n){EditText e=edit(String.format(Locale.US,"%.2f",n));e.setInputType(2|8192);return e;}
