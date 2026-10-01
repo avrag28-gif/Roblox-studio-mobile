@@ -66,13 +66,22 @@ static bool IsInSubtree(const rsm::Instance*root,const rsm::Instance*node){\n if
  auto parentIt=editorIndex.find(parentId);
  if(sit==structuralSnapshots.end()||parentIt==editorIndex.end())return false;
 
- const bool restore=(op=="DELETE"&&undo)||(op=="CREATE"&&!undo);
+ const bool restore=(op=="DELETE"&&undo)||(op=="CREATE"&&!undo)||(op=="REPARENT"&&undo);
+ if(op=="REPARENT" && undo){
+  auto it=editorIndex.find(id);if(it==editorIndex.end())return false;
+  rsm::Instance*oldParent=ResolveParent(sit->second.parentId);if(!oldParent)return false;
+  it->second->SetParent(oldParent);return true;
+ }
+ if(op=="REPARENT" && !undo){
+  auto it=editorIndex.find(id);if(it==editorIndex.end())return false;
+  it->second->SetParent(restoreParent);return true;
+ }
  if(restore){
   if(editorIndex.find(id)!=editorIndex.end())return false;
   auto copy=sit->second.tree->Clone();
   if(!copy)return false;
   rsm::Instance*raw=copy.get();
-  rsm::Instance::SetParent(std::move(copy),parentIt->second);
+  rsm::Instance::SetParent(std::move(copy),restoreParent);
   auto ids=sit->second.ids;
   std::vector<rsm::Instance*> restored;
   restored.push_back(raw);
@@ -151,7 +160,15 @@ extern "C" JNIEXPORT jboolean JNICALL Java_com_rsm_mobile_MainActivity_nativeCre
 extern "C" JNIEXPORT jstring JNICALL Java_com_rsm_mobile_MainActivity_nativeDuplicateInstance(JNIEnv* env,jclass,jstring id){
  std::lock_guard<std::mutex> lock(engineMutex);const char*sid=env->GetStringUTFChars(id,nullptr);auto it=editorIndex.find(sid?sid:"");if(it==editorIndex.end()){if(sid)env->ReleaseStringUTFChars(id,sid);return nullptr;}
  rsm::Instance*src=it->second;auto copy=src->Clone();if(!copy){if(sid)env->ReleaseStringUTFChars(id,sid);return nullptr;}
- std::string newId=sid?std::string(sid)+"#copy"+std::to_string(nextStructuralToken++):"copy";copy->SetName(src->Name()+" Copy");rsm::Instance*raw=copy.get();rsm::Instance*parent=src->Parent()?src->Parent():workspace;rsm::Instance::SetParent(std::move(copy),parent);editorIndex[newId]=raw;
+ std::string newId=sid?std::string(sid)+"#copy"+std::to_string(nextStructuralToken++):"copy";copy->SetName(src->Name()+" Copy");
+ rsm::Instance*raw=copy.get();rsm::Instance*parent=src->Parent()?src->Parent():workspace;
+ rsm::Instance::SetParent(std::move(copy),parent);editorIndex[newId]=raw;
+ std::string parentId;if(src->Parent())for(const auto&e:editorIndex)if(e.second==src->Parent()){parentId=e.first;break;}
+ std::string token="S"+std::to_string(nextStructuralToken++);
+ StructuralSnapshot ss;ss.id=newId;ss.parentId=parentId;
+ auto snap=raw->Clone();ss.tree=std::move(snap);if(ss.tree)CollectSnapshotIdsWithSource(raw,ss.tree.get(),newId,ss.ids);
+ structuralSnapshots.emplace(token,std::move(ss));
+ RecordStructure(MakeStructurePayload("CREATE",newId,parentId,token));
  if(sid)env->ReleaseStringUTFChars(id,sid);return env->NewStringUTF(newId.c_str());
 }
 extern "C" JNIEXPORT jboolean JNICALL Java_com_rsm_mobile_MainActivity_nativeDeleteInstance(JNIEnv* env,jclass,jstring id){
@@ -170,7 +187,26 @@ extern "C" JNIEXPORT jboolean JNICALL Java_com_rsm_mobile_MainActivity_nativeDel
  if(sid)env->ReleaseStringUTFChars(id,sid);return ok?JNI_TRUE:JNI_FALSE;
 }
 extern "C" JNIEXPORT jboolean JNICALL Java_com_rsm_mobile_MainActivity_nativeSetParent(JNIEnv* env,jclass,jstring id,jstring parentId){
- std::lock_guard<std::mutex> lock(engineMutex);const char*sid=env->GetStringUTFChars(id,nullptr),*sp=env->GetStringUTFChars(parentId,nullptr);auto a=editorIndex.find(sid?sid:""),b=editorIndex.find(sp?sp:"");bool ok=a!=editorIndex.end()&&b!=editorIndex.end()&&a->second!=b->second;if(ok)a->second->SetParent(b->second);if(sid)env->ReleaseStringUTFChars(id,sid);if(sp)env->ReleaseStringUTFChars(parentId,sp);return ok?JNI_TRUE:JNI_FALSE;
+ std::lock_guard<std::mutex> lock(engineMutex);
+ const char*sid=env->GetStringUTFChars(id,nullptr),*sp=env->GetStringUTFChars(parentId,nullptr);
+ std::string sidv=sid?sid:"",spv=sp?sp:"";
+ auto a=editorIndex.find(sidv),b=editorIndex.find(spv);
+ rsm::Instance*child=a==editorIndex.end()?nullptr:a->second;
+ rsm::Instance*parent=spv.empty()?workspace:(b==editorIndex.end()?nullptr:b->second);
+ bool ok=child&&parent&&child!=parent&&!IsInSubtree(child,parent);
+ if(ok){
+  std::string oldParent;
+  if(child->Parent())for(const auto&e:editorIndex)if(e.second==child->Parent()){oldParent=e.first;break;}
+  std::string token="S"+std::to_string(nextStructuralToken++);
+  auto snap=child->Clone();
+  StructuralSnapshot ss;ss.id=sidv;ss.parentId=oldParent;ss.tree=std::move(snap);
+  if(ss.tree)CollectSnapshotIdsWithSource(child,ss.tree.get(),sidv,ss.ids);
+  structuralSnapshots.emplace(token,std::move(ss));
+  child->SetParent(parent);
+  RecordStructure(MakeStructurePayload("REPARENT",sidv,spv,token));
+ }
+ if(sid)env->ReleaseStringUTFChars(id,sid);if(sp)env->ReleaseStringUTFChars(parentId,sp);
+ return ok?JNI_TRUE:JNI_FALSE;
 }
 
 extern "C" JNIEXPORT jstring JNICALL Java_com_rsm_mobile_MainActivity_nativeGetSceneSnapshot(JNIEnv* env,jclass){
