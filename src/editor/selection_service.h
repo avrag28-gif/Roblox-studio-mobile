@@ -4,6 +4,7 @@
 #include "../core/base_part.h"
 #include "../renderer/camera.h"
 #include "../physics/raycast.h"
+#include "../core/world_bounds.h"
 #include <algorithm>
 #include <cmath>
 #include <utility>
@@ -17,7 +18,7 @@ public:
  Instance* RayPick(const DataModel& game,const Ray& ray) {
   float best=1e30f; Instance* hit=nullptr;
   for(auto* i:game.GetDescendants()) if(auto* p=dynamic_cast<BasePart*>(i)) {
-   Vector3 min=p->Position()-p->Size()*0.5f, maxv=p->Position()+p->Size()*0.5f;
+   auto bounds=WorldBounds(*p); Vector3 min=bounds.min, maxv=bounds.max;
    float tmin=0,tmax=1e30f;
    const float o[3]={ray.origin.x,ray.origin.y,ray.origin.z}, d[3]={ray.direction.x,ray.direction.y,ray.direction.z};
    const float mn[3]={min.x,min.y,min.z}, mx[3]={maxv.x,maxv.y,maxv.z};
