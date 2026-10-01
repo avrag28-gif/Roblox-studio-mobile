@@ -2,7 +2,7 @@ package com.roblox.studiomobile.editor
 
 import com.roblox.studiomobile.core.*
 
-enum class TransformTool { Select, Move, Scale }
+enum class TransformTool { Select, Move, Scale, Rotate }
 
 enum class TransformAxis { Screen, X, Y, Z }
 
@@ -39,6 +39,18 @@ class TransformController(private val runtime: CoreRuntime) {
             TransformTool.Scale -> {
                 val s = runtime.properties.get<Vec3>(instance, "Size") ?: Vec3(4f, 1f, 2f)
                 runtime.properties.set(instance, "Size", scaleDelta(s, dx, dy))
+                true
+            }
+            TransformTool.Rotate -> {
+                val r = runtime.properties.get<Vec3>(instance, "Orientation") ?: Vec3()
+                val amount = (dx - dy) * 0.5f
+                val next = when (axis) {
+                    TransformAxis.X -> Vec3(r.x + amount, r.y, r.z)
+                    TransformAxis.Y -> Vec3(r.x, r.y + amount, r.z)
+                    TransformAxis.Z -> Vec3(r.x, r.y, r.z + amount)
+                    TransformAxis.Screen -> Vec3(r.x, r.y + amount, r.z)
+                }
+                runtime.properties.set(instance, "Orientation", next)
                 true
             }
             TransformTool.Select -> false
