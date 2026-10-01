@@ -117,8 +117,8 @@ static class Obj {
     return bar;
   }
 
-  void addPart(){Obj o=new Obj("Part");o.x=objects.size()*2-2;o.y=1;objects.add(o);if(nativeCreateInstance(o.id,o.name,o.type,o.parent)){nativeSetProperty(o.id,"PositionX",o.x);nativeSetProperty(o.id,"PositionY",o.y);nativeSetProperty(o.id,"PositionZ",o.z);nativeSetProperty(o.id,"SizeX",o.sx);nativeSetProperty(o.id,"SizeY",o.sy);nativeSetProperty(o.id,"SizeZ",o.sz);nativeSetProperty(o.id,"Anchored",1);nativeSetProperty(o.id,"CanCollide",1);}refreshNativeScene();applyNativeSceneToEditor();select(find(o.id));dirty=true;append("INFO","Created Part");}
-  void addModel(){Obj o=new Obj("Model");o.type="Model";o.sx=o.sy=o.sz=4;o.y=2;o.color=Color.rgb(190,100,220);objects.add(o);if(nativeCreateInstance(o.id,o.name,o.type,o.parent)){nativeSetProperty(o.id,"PositionX",o.x);nativeSetProperty(o.id,"PositionY",o.y);nativeSetProperty(o.id,"PositionZ",o.z);refreshNativeScene();applyNativeSceneToEditor();}select(find(o.id));dirty=true;append("INFO","Created Model");}
+  void addPart(){nativeBeginHistoryTransaction();try{Obj o=new Obj("Part");o.x=objects.size()*2-2;o.y=1;objects.add(o);if(nativeCreateInstance(o.id,o.name,o.type,o.parent)){nativeSetProperty(o.id,"PositionX",o.x);nativeSetProperty(o.id,"PositionY",o.y);nativeSetProperty(o.id,"PositionZ",o.z);nativeSetProperty(o.id,"SizeX",o.sx);nativeSetProperty(o.id,"SizeY",o.sy);nativeSetProperty(o.id,"SizeZ",o.sz);nativeSetProperty(o.id,"Anchored",1);nativeSetProperty(o.id,"CanCollide",1);}refreshNativeScene();applyNativeSceneToEditor();select(find(o.id));dirty=true;append("INFO","Created Part");}finally{nativeEndHistoryTransaction();}}
+  void addModel(){nativeBeginHistoryTransaction();try{Obj o=new Obj("Model");o.type="Model";o.sx=o.sy=o.sz=4;o.y=2;o.color=Color.rgb(190,100,220);objects.add(o);if(nativeCreateInstance(o.id,o.name,o.type,o.parent)){nativeSetProperty(o.id,"PositionX",o.x);nativeSetProperty(o.id,"PositionY",o.y);nativeSetProperty(o.id,"PositionZ",o.z);refreshNativeScene();applyNativeSceneToEditor();}select(find(o.id));dirty=true;append("INFO","Created Model");}finally{nativeEndHistoryTransaction();}}
   void togglePlay(Button b){
     playing=!playing;b.setText(playing?"■  Stop":"▶  Play");nativeSetPlaying(playing);status.setText(playing?"●  PLAY   •   runtime scene active":"●  EDIT   •   "+objects.size()+" objects   •   Ready");
     append("INFO",playing?"Play session started from isolated runtime snapshot.":"Play session stopped; editor scene preserved.");viewport.invalidate();
@@ -151,6 +151,8 @@ static class Obj {
   static native String nativeRaycastId(float x,float y,float w,float h);
   static native void nativeSetPlaying(boolean playing);
   static native String nativeGetSceneSnapshot();
+  static native void nativeBeginHistoryTransaction();
+  static native void nativeEndHistoryTransaction();
   static native boolean nativeCreateInstance(String id,String name,String type,String parentId);
   static native boolean nativeDeleteInstance(String id);
   static native String nativeDuplicateInstance(String id);
@@ -217,7 +219,7 @@ static class Obj {
     names.add("Workspace");choices.add(null);
     for(Obj o:objects) if(o!=selected && "Model".equals(o.type) && !isDescendant(o,selected)) {names.add(o.name);choices.add(o);}
     new AlertDialog.Builder(this).setTitle("Reparent "+selected.name).setItems(names.toArray(new String[0]),(d,w)->{
-      selected.parent=choices.get(w)==null?"Workspace":choices.get(w).id;nativeSetParent(selected.id,selected.parent);changed();append("INFO","Reparented "+selected.name);
+      nativeBeginHistoryTransaction();try{selected.parent=choices.get(w)==null?"Workspace":choices.get(w).id;nativeSetParent(selected.id,selected.parent);changed();append("INFO","Reparented "+selected.name);}finally{nativeEndHistoryTransaction();}
     }).show();
   }
   boolean isDescendant(Obj candidate,Obj node){String p=candidate.parent;while(!"Workspace".equals(p)){if(p.equals(node.id))return true;Obj q=find(p);if(q==null)break;p=q.parent;}return false;}
@@ -310,8 +312,8 @@ static class Obj {
     }
     public boolean onTouchEvent(android.view.MotionEvent e){
       if(e.getPointerCount()>1){float x0=e.getX(0),y0=e.getY(0),x1=e.getX(1),y1=e.getY(1);float dx=(x0+x1)*.5f-lastX,dy=(y0+y1)*.5f-lastY;float span=(float)Math.hypot(x1-x0,y1-y0);if(e.getAction()==MotionEvent.ACTION_POINTER_DOWN||lastSpan==0){lastSpan=span;lastAngle=(float)Math.atan2(y1-y0,x1-x0);}else if(e.getAction()==MotionEvent.ACTION_MOVE){float angle=(float)Math.atan2(y1-y0,x1-x0);nativeCameraOrbit(-dx*.006f+(angle-lastAngle)*0.35f,dy*.006f);nativeCameraZoom((lastSpan-span)*.02f);lastSpan=span;lastAngle=angle;}lastX=(x0+x1)*.5f;lastY=(y0+y1)*.5f;return true;}
-      float x=e.getX(),y=e.getY();if(e.getAction()==MotionEvent.ACTION_DOWN){lastX=x;lastY=y;drag=true;return true;}
-      if(e.getAction()==MotionEvent.ACTION_UP){lastSpan=0;Obj hit=hit(x,y);if(hit!=null){select(hit);}else if(mode==Mode.SELECT){selected=null;refreshProps();invalidate();}drag=false;return true;}
+      float x=e.getX(),y=e.getY();if(e.getAction()==MotionEvent.ACTION_DOWN){lastX=x;lastY=y;drag=true;if(selected!=null&&mode!=Mode.SELECT)nativeBeginHistoryTransaction();return true;}
+      if(e.getAction()==MotionEvent.ACTION_UP){if(selected!=null&&mode!=Mode.SELECT)nativeEndHistoryTransaction();lastSpan=0;Obj hit=hit(x,y);if(hit!=null){select(hit);}else if(mode==Mode.SELECT){selected=null;refreshProps();invalidate();}drag=false;return true;}
       if(e.getAction()==MotionEvent.ACTION_MOVE&&drag&&selected!=null&&mode!=Mode.SELECT){applyGesture(selected,x-lastX,y-lastY);lastX=x;lastY=y;return true;}
       return true;
     }
