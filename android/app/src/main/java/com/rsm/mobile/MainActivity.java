@@ -147,6 +147,7 @@ static class Obj {
   static native String nativeGetSceneSnapshot();
   static native boolean nativeCreateInstance(String id,String name,String type,String parentId);
   static native boolean nativeDeleteInstance(String id);
+  static native String nativeDuplicateInstance(String id);
   static native boolean nativeSetParent(String id,String parentId);
   static native boolean nativeSetProperty(String id,String property,double value);
   void refreshExplorer(){
@@ -211,7 +212,8 @@ static class Obj {
   }
   boolean isDescendant(Obj candidate,Obj node){String p=candidate.parent;while(!"Workspace".equals(p)){if(p.equals(node.id))return true;Obj q=find(p);if(q==null)break;p=q.parent;}return false;}
   Obj find(String id){for(Obj o:objects)if(o.id.equals(id))return o;return null;}
-  void duplicate(){if(selected==null)return;Obj n=new Obj(selected.name+" Copy");n.type=selected.type;n.parent=selected.parent;n.x=selected.x+2;n.y=selected.y;n.z=selected.z;n.sx=selected.sx;n.sy=selected.sy;n.sz=selected.sz;n.color=selected.color;n.anchored=selected.anchored;n.collide=selected.collide;objects.add(n);select(n);changed();append("INFO","Duplicated "+selected.name);}
+  void duplicate(){if(selected==null)return;String newId=nativeDuplicateInstance(selected.id);if(newId==null)return;refreshNativeScene();applyNativeSceneToEditor();Obj n=find(newId);if(n==null){for(Obj o:objects)if(o.name.equals(selected.name+" Copy")){n=o;break;}}if(n!=null){selected=n;dirty=true;writeRecovery();refreshExplorer();refreshProps();viewport.invalidate();append("INFO","Duplicated "+selected.name);}}
+
   void deleteSelected(){if(selected==null)return;String n=selected.name;String removed=selected.id;nativeDeleteInstance(removed);ArrayList<Obj> gone=new ArrayList<>();for(Obj o:objects){String p=o.parent;while(!"Workspace".equals(p)){if(p.equals(removed)){gone.add(o);break;}Obj q=find(p);if(q==null)break;p=q.parent;}}gone.add(selected);objects.removeAll(gone);selected=null;changed();append("INFO","Deleted "+n);}
   void cycleColor(){int[] c={Color.rgb(90,160,240),Color.rgb(240,100,90),Color.rgb(100,220,130),Color.rgb(220,190,70),Color.rgb(190,100,220),Color.WHITE};int i=0;for(int j=0;j<c.length;j++)if(selected.color==c[j])i=(j+1)%c.length;selected.color=c[i];changed();refreshProps();}
   
