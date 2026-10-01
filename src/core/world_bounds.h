@@ -8,7 +8,7 @@
 namespace rsm {
 
 inline AABB WorldBounds(const BasePart& part) {
-    const auto& q = part.CFrameValue().rotation.Normalized();
+    const auto q = WorldRotation(part).Normalized();
     const float axx = 1 - 2*(q.y*q.y + q.z*q.z);
     const float axy = 2*(q.x*q.y - q.z*q.w);
     const float axz = 2*(q.x*q.z + q.y*q.w);
