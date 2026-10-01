@@ -142,6 +142,7 @@ static class Obj {
   static native boolean nativeCreateInstance(String id,String name,String type,String parentId);
   static native boolean nativeDeleteInstance(String id);
   static native boolean nativeSetParent(String id,String parentId);
+  static native boolean nativeSetProperty(String id,String property,double value);
   void refreshExplorer(){
     explorer.removeAllViews();
     TextView h=text("EXPLORER",13);h.setTypeface(Typeface.DEFAULT,Typeface.BOLD);explorer.addView(h,new LinearLayout.LayoutParams(-1,dp(46)));
